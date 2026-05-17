@@ -1,6 +1,12 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  reactStrictMode: true,
+  // Allow @/ path alias
+  experimental: {},
+  // Suppress styled-jsx warning (we use Tailwind now)
+  compiler: {},
+  images: {
+    remotePatterns: [],
+  },
 };
 
 export default nextConfig;

@@ -1,122 +1,555 @@
 'use client';
 
-import React from 'react';
+import { motion, useInView } from 'framer-motion';
 import Link from 'next/link';
-import Navbar from '../components/Navbar';
+import { useRef, useState, useEffect } from 'react';
+import {
+  Shield, Globe, QrCode, Zap, Lock, Activity,
+  ArrowRight, Check, Terminal, ChevronRight, Star
+} from 'lucide-react';
+import Navbar from '@/components/Navbar';
+import ParticleBackground from '@/components/ParticleBackground';
 
-export default function Home() {
+const features = [
+  {
+    icon: Globe,
+    title: 'URL Threat Detection',
+    desc: 'AI-powered analysis of malicious URLs, phishing sites, malware domains, and scam links with 98%+ accuracy.',
+    color: '#4facfe',
+    bg: 'rgba(79,172,254,0.1)',
+  },
+  {
+    icon: QrCode,
+    title: 'QR Code Security',
+    desc: 'Decode and analyze QR codes for hidden threats, fake payment redirects, and malicious payloads in real-time.',
+    color: '#a855f7',
+    bg: 'rgba(168,85,247,0.1)',
+  },
+  {
+    icon: Zap,
+    title: 'Real-time Analysis',
+    desc: 'Sub-300ms threat detection with deep redirect chain analysis and explainable AI risk scoring.',
+    color: '#00f2fe',
+    bg: 'rgba(0,242,254,0.1)',
+  },
+  {
+    icon: Lock,
+    title: 'Multi-Layer Defense',
+    desc: 'XGBoost ML model with 25+ extracted URL features, reputation scoring, and cascade routing.',
+    color: '#10b981',
+    bg: 'rgba(16,185,129,0.1)',
+  },
+  {
+    icon: Activity,
+    title: 'Live Threat Monitor',
+    desc: 'Real-time threat feed with animated cyber attack visualization and live block/allow decisions.',
+    color: '#f97316',
+    bg: 'rgba(249,115,22,0.1)',
+  },
+  {
+    icon: Shield,
+    title: 'Batch Processing',
+    desc: 'Scan up to 50 URLs simultaneously with batch prediction API for enterprise security workflows.',
+    color: '#eab308',
+    bg: 'rgba(234,179,8,0.1)',
+  },
+];
+
+const stats = [
+  { value: '98.4%', label: 'Detection Accuracy' },
+  { value: '<240ms', label: 'Avg Response Time' },
+  { value: '12M+', label: 'Threats Blocked' },
+  { value: '24/7', label: 'Active Monitoring' },
+];
+
+const testimonials = [
+  {
+    name: 'Arjun Mehta',
+    role: 'CTO, FinSecure India',
+    text: 'PhishGuard blocked 3,000+ phishing URLs in our first week. The QR detection is a game changer for our banking platform.',
+    rating: 5,
+  },
+  {
+    name: 'Priya Krishnan',
+    role: 'Security Lead, TechStack',
+    text: 'The explainable AI feature gives our security team full visibility into why each URL is flagged. Incredible product.',
+    rating: 5,
+  },
+  {
+    name: 'Rahul Das',
+    role: 'DevOps Engineer, CloudNine',
+    text: 'REST API integration took under 10 minutes. The batch prediction endpoint is blazing fast.',
+    rating: 5,
+  },
+];
+
+const pricingPlans = [
+  {
+    name: 'Free',
+    price: '₹0',
+    period: 'forever',
+    features: ['100 URL scans/day', '10 QR scans/day', 'Basic threat analysis', 'API access'],
+    cta: 'Start Free',
+    highlighted: false,
+  },
+  {
+    name: 'Pro',
+    price: '₹999',
+    period: '/month',
+    features: ['50,000 URL scans/month', '5,000 QR scans/month', 'Batch prediction API', 'Priority support', 'Advanced analytics', 'Webhook alerts'],
+    cta: 'Start Pro',
+    highlighted: true,
+  },
+  {
+    name: 'Enterprise',
+    price: 'Custom',
+    period: '',
+    features: ['Unlimited scans', 'On-premise deployment', 'Custom ML model training', 'SLA guarantee', 'Dedicated support', 'SSO & RBAC'],
+    cta: 'Contact Sales',
+    highlighted: false,
+  },
+];
+
+function AnimatedStat({ value, label }: { value: string; label: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, { once: true });
+
   return (
-    <main className="app-container">
+    <motion.div
+      ref={ref}
+      initial={{ opacity: 0, y: 30 }}
+      animate={inView ? { opacity: 1, y: 0 } : {}}
+      transition={{ duration: 0.6 }}
+      className="text-center"
+    >
+      <div className="text-4xl lg:text-5xl font-black gradient-text mb-2">{value}</div>
+      <div className="text-xs font-semibold text-cyber-muted uppercase tracking-widest">{label}</div>
+    </motion.div>
+  );
+}
+
+export default function LandingPage() {
+  const [terminalLines, setTerminalLines] = useState<string[]>([]);
+  const allLines = [
+    '> phishguard --scan https://suspicious-bank.ru/login',
+    '  → Extracting 25 URL features...',
+    '  → Running XGBoost classifier...',
+    '  → Checking reputation database...',
+    '  ✗ THREAT DETECTED: PHISHING',
+    '  → Risk Score: 94/100 | Confidence: 97.3%',
+    '  → Reasons: fake-domain, credential-harvest-form, IP-redirect',
+    '  → STATUS: BLOCKED ⛔',
+    '',
+    '> phishguard --qr-scan payment.png',
+    '  → Decoding QR image...',
+    '  → Payload: https://bit.ly/3xFake99',
+    '  → Following redirect chain (3 hops)...',
+    '  → Final URL: http://evil-payment.xyz/steal',
+    '  ✗ FAKE PAYMENT QR DETECTED',
+    '  → STATUS: BLOCKED ⛔',
+  ];
+
+  useEffect(() => {
+    let i = 0;
+    const interval = setInterval(() => {
+      if (i < allLines.length) {
+        setTerminalLines((prev) => [...prev, allLines[i]]);
+        i++;
+      } else {
+        clearInterval(interval);
+      }
+    }, 220);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <main className="relative min-h-screen overflow-x-hidden">
+      <ParticleBackground />
       <Navbar />
 
-      <section className="hero">
-        <div className="hero-content">
-          <div className="badge-main">AI-Powered Cybersecurity</div>
-          <h1>
-            Stop Phishing <br />
-            <span className="gradient-text">Before It Strikes.</span>
-          </h1>
-          <p className="hero-sub">
-            PhishGuard AI uses intelligent Hindsight memory and CascadeFlow
-            routing to detect zero-day threats with unprecedented precision.
-          </p>
+      {/* Hero */}
+      <section className="relative pt-8 pb-24 px-4 text-center overflow-hidden">
+        {/* Animated grid */}
+        <div className="absolute inset-0 cyber-grid opacity-40" />
 
-          <div className="cta-group">
-            <Link href="/scan" className="hero-cta gradient-bg">
-              <span>Start Scanning</span>
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
+        {/* Blobs */}
+        <div className="absolute top-0 left-1/4 w-[600px] h-[600px] rounded-full bg-cyber-blue/5 blur-[120px] pointer-events-none" />
+        <div className="absolute top-20 right-1/4 w-[400px] h-[400px] rounded-full bg-cyber-purple/5 blur-[100px] pointer-events-none" />
+
+        <div className="relative z-10 container max-w-5xl">
+          <motion.div
+            initial={{ opacity: 0, y: -20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 text-xs font-bold uppercase tracking-widest"
+            style={{
+              background: 'rgba(79,172,254,0.1)',
+              border: '1px solid rgba(79,172,254,0.3)',
+              color: '#4facfe',
+            }}
+          >
+            <span className="w-1.5 h-1.5 rounded-full bg-cyber-blue animate-pulse" />
+            AI-Powered Cybersecurity Platform · v2.0
+          </motion.div>
+
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.7, delay: 0.1 }}
+            className="text-display text-5xl md:text-7xl lg:text-8xl font-black leading-[1.0] tracking-tight mb-6"
+          >
+            AI Cyber Defense
+            <br />
+            <span className="gradient-text">for the Modern</span>
+            <br />
+            Internet.
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="text-cyber-text text-lg md:text-xl max-w-2xl mx-auto mb-10 leading-relaxed"
+          >
+            Detect phishing URLs, malicious QR codes, malware domains, and scam links
+            in real-time using production-grade AI with explainable threat intelligence.
+          </motion.p>
+
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.3 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-4"
+          >
+            <Link href="/scan">
+              <motion.button
+                whileHover={{ scale: 1.05, boxShadow: '0 0 40px rgba(79,172,254,0.5)' }}
+                whileTap={{ scale: 0.95 }}
+                className="cyber-btn cyber-btn-primary text-sm px-8 py-4 text-cyber-black font-black rounded-2xl"
+              >
+                <Zap className="w-5 h-5" />
+                Start Scanning Free
+                <ArrowRight className="w-4 h-4" />
+              </motion.button>
             </Link>
-            <Link href="/dashboard" className="hero-cta-secondary">
-              View Dashboard
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M9 5l7 7-7 7" />
-              </svg>
+            <Link href="/dashboard">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="cyber-btn cyber-btn-secondary text-sm px-8 py-4 rounded-2xl"
+              >
+                <Activity className="w-5 h-5" />
+                View Dashboard
+              </motion.button>
             </Link>
+          </motion.div>
+
+          {/* Trust badges */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="flex items-center justify-center gap-6 mt-10 flex-wrap"
+          >
+            {['No signup required', '98.4% accuracy', 'Open API', 'QR + URL detection'].map((badge) => (
+              <div key={badge} className="flex items-center gap-1.5 text-xs text-cyber-muted">
+                <Check className="w-3.5 h-3.5 text-cyber-green" />
+                {badge}
+              </div>
+            ))}
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Stats */}
+      <section className="py-16 px-4 border-y border-cyber-border/30">
+        <div className="container max-w-4xl">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((s) => <AnimatedStat key={s.label} {...s} />)}
           </div>
         </div>
-
-        <div className="blob blob-1"></div>
-        <div className="blob blob-2"></div>
-        <div className="blob blob-3"></div>
       </section>
 
-      <section className="features container">
-        <div className="features-grid">
-          {[
-            { icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z', title: 'Hindsight Memory', desc: 'Learns from every scan to build an evolving threat intelligence database.', bg: 'rgba(79,172,254,0.1)', fg: '#4facfe' },
-            { icon: 'M13 10V3L4 14h7v7l9-11h-7z', title: 'CascadeFlow Routing', desc: 'Dynamically routes analysis through optimal AI models based on complexity.', bg: 'rgba(0,242,254,0.1)', fg: '#00f2fe' },
-            { icon: 'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z', title: 'Real-time Detection', desc: 'Sub-second analysis with 98%+ accuracy using multi-layered neural networks.', bg: 'rgba(168,85,247,0.1)', fg: '#a855f7' },
-          ].map((f, i) => (
-            <div key={i} className="feature-card glass">
-              <div className="feature-icon" style={{ background: f.bg, color: f.fg }}>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d={f.icon} /></svg>
+      {/* Features */}
+      <section className="py-24 px-4">
+        <div className="container max-w-6xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <div className="text-xs font-mono text-cyber-blue uppercase tracking-widest mb-4">Capabilities</div>
+            <h2 className="text-display text-4xl lg:text-5xl font-black text-white mb-4">
+              Full-spectrum <span className="gradient-text">threat detection</span>
+            </h2>
+            <p className="text-cyber-text max-w-xl mx-auto">
+              Every layer of your digital attack surface, covered by AI.
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            {features.map((f, i) => {
+              const Icon = f.icon;
+              return (
+                <motion.div
+                  key={f.title}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: i * 0.08 }}
+                  whileHover={{ y: -4, transition: { duration: 0.2 } }}
+                  className="glass-card p-6 group"
+                >
+                  <div
+                    className="w-12 h-12 rounded-2xl flex items-center justify-center mb-5 transition-transform group-hover:scale-110"
+                    style={{ background: f.bg, border: `1px solid ${f.color}30` }}
+                  >
+                    <Icon className="w-6 h-6" style={{ color: f.color }} />
+                  </div>
+                  <h3 className="text-base font-bold text-white mb-2">{f.title}</h3>
+                  <p className="text-sm text-cyber-text leading-relaxed">{f.desc}</p>
+                </motion.div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
+
+      {/* Terminal showcase */}
+      <section className="py-24 px-4">
+        <div className="container max-w-5xl">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <div className="text-xs font-mono text-cyber-blue uppercase tracking-widest mb-4">Live Demo</div>
+              <h2 className="text-display text-4xl font-black text-white mb-4">
+                See it in <span className="gradient-text">action</span>
+              </h2>
+              <p className="text-cyber-text leading-relaxed mb-6">
+                PhishGuard's AI engine runs a multi-stage analysis pipeline — from feature extraction
+                to ML classification to reputation checks — all in under 300ms.
+              </p>
+              <Link href="/scan">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  className="cyber-btn cyber-btn-primary text-sm"
+                >
+                  Try URL Scanner
+                  <ArrowRight className="w-4 h-4" />
+                </motion.button>
+              </Link>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              className="rounded-2xl overflow-hidden"
+              style={{
+                background: '#0a0f1a',
+                border: '1px solid rgba(79,172,254,0.15)',
+                boxShadow: '0 0 60px rgba(79,172,254,0.1)',
+              }}
+            >
+              {/* Terminal header */}
+              <div className="flex items-center gap-2 px-5 py-3 border-b border-cyber-border/40">
+                <div className="w-3 h-3 rounded-full bg-red-500/60" />
+                <div className="w-3 h-3 rounded-full bg-yellow-500/60" />
+                <div className="w-3 h-3 rounded-full bg-green-500/60" />
+                <div className="flex items-center gap-2 ml-2">
+                  <Terminal className="w-3.5 h-3.5 text-cyber-muted" />
+                  <span className="text-xs font-mono text-cyber-muted">phishguard-cli</span>
+                </div>
               </div>
-              <h3>{f.title}</h3>
-              <p>{f.desc}</p>
-            </div>
-          ))}
+              {/* Terminal body */}
+              <div className="p-5 font-mono text-xs leading-relaxed min-h-[300px] space-y-1">
+                {terminalLines.map((line, i) => (
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, x: -5 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className={
+                      line?.includes('✗') || line?.includes('BLOCKED') || line?.includes('DETECTED')
+                        ? 'text-red-400'
+                        : line?.includes('→')
+                        ? 'text-cyber-text'
+                        : line?.startsWith('>')
+                        ? 'text-cyber-blue'
+                        : 'text-cyber-muted'
+                    }
+                  >
+                    {line || '\u00A0'}
+                  </motion.div>
+                ))}
+                <span className="inline-block w-1.5 h-3.5 bg-cyber-blue animate-pulse ml-0.5" />
+              </div>
+            </motion.div>
+          </div>
         </div>
       </section>
 
-      <section className="stats-section container">
-        <div className="stats-grid">
-          {[
-            { val: '98.4%', label: 'Detection Accuracy' },
-            { val: '<240ms', label: 'Avg Response Time' },
-            { val: '12M+', label: 'Threats Blocked' },
-            { val: '24/7', label: 'Active Monitoring' },
-          ].map((s, i) => (
-            <div key={i} className="stat-card">
-              <span className="stat-value gradient-text">{s.val}</span>
-              <span className="stat-label">{s.label}</span>
-            </div>
-          ))}
+      {/* Testimonials */}
+      <section className="py-24 px-4 border-t border-cyber-border/20">
+        <div className="container max-w-6xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-display text-4xl font-black text-white mb-3">
+              Trusted by <span className="gradient-text">security teams</span>
+            </h2>
+          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {testimonials.map((t, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className="glass-card p-6"
+              >
+                <div className="flex gap-0.5 mb-4">
+                  {[...Array(t.rating)].map((_, j) => (
+                    <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
+                  ))}
+                </div>
+                <p className="text-cyber-text text-sm leading-relaxed mb-4">"{t.text}"</p>
+                <div>
+                  <div className="font-bold text-sm text-white">{t.name}</div>
+                  <div className="text-xs text-cyber-muted">{t.role}</div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 
-      <footer className="footer">
-        <p>&copy; 2026 PhishGuard AI. All rights reserved.</p>
+      {/* Pricing */}
+      <section className="py-24 px-4">
+        <div className="container max-w-5xl">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-display text-4xl font-black text-white mb-3">
+              Simple <span className="gradient-text">pricing</span>
+            </h2>
+            <p className="text-cyber-text">Start free, scale as you grow.</p>
+          </motion.div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+            {pricingPlans.map((plan, i) => (
+              <motion.div
+                key={plan.name}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.1 }}
+                className={`glass-card p-6 relative ${plan.highlighted ? 'animated-border' : ''}`}
+                style={plan.highlighted ? { borderColor: 'rgba(79,172,254,0.4)' } : {}}
+              >
+                {plan.highlighted && (
+                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-bg text-[10px] font-black text-cyber-black uppercase tracking-widest">
+                    Most Popular
+                  </div>
+                )}
+                <div className="mb-4">
+                  <div className="text-xs font-mono text-cyber-muted uppercase tracking-wider mb-2">{plan.name}</div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl font-black text-white">{plan.price}</span>
+                    <span className="text-sm text-cyber-muted">{plan.period}</span>
+                  </div>
+                </div>
+                <ul className="space-y-2.5 mb-6">
+                  {plan.features.map((f) => (
+                    <li key={f} className="flex items-center gap-2 text-sm text-cyber-text">
+                      <Check className="w-3.5 h-3.5 text-cyber-green flex-shrink-0" />
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <button
+                  className={`w-full cyber-btn text-sm py-3 rounded-xl font-bold ${
+                    plan.highlighted ? 'cyber-btn-primary text-cyber-black' : 'cyber-btn-secondary'
+                  }`}
+                >
+                  {plan.cta}
+                </button>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA */}
+      <section className="py-24 px-4">
+        <div className="container max-w-3xl text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="glass-card p-12 relative overflow-hidden"
+            style={{ borderColor: 'rgba(79,172,254,0.2)' }}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-cyber-blue/5 to-cyber-purple/5" />
+            <div className="relative">
+              <Shield className="w-16 h-16 gradient-text mx-auto mb-6" style={{ color: '#4facfe' }} />
+              <h2 className="text-display text-4xl font-black text-white mb-4">
+                Start protecting your users <span className="gradient-text">today</span>
+              </h2>
+              <p className="text-cyber-text mb-8">
+                Free to start. No credit card required. Scan your first URL in under 60 seconds.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Link href="/scan">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    className="cyber-btn cyber-btn-primary text-sm px-8 py-4 text-cyber-black font-black rounded-2xl"
+                  >
+                    <Zap className="w-5 h-5" />
+                    Scan a URL Now
+                  </motion.button>
+                </Link>
+                <Link href="/qr">
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    className="cyber-btn cyber-btn-secondary text-sm px-8 py-4 rounded-2xl"
+                  >
+                    <QrCode className="w-5 h-5" />
+                    Scan a QR Code
+                  </motion.button>
+                </Link>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="py-10 px-4 border-t border-cyber-border/20">
+        <div className="container max-w-6xl flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 rounded-xl gradient-bg flex items-center justify-center">
+              <Shield className="w-4 h-4 text-cyber-black" />
+            </div>
+            <span className="font-bold text-sm">PhishGuard AI</span>
+          </div>
+          <div className="text-xs text-cyber-muted">© 2026 PhishGuard AI. All rights reserved. Powered by XGBoost ML.</div>
+          <div className="flex items-center gap-4 text-xs text-cyber-muted">
+            <Link href="/docs" className="hover:text-white transition-colors">API Docs</Link>
+            <Link href="/settings" className="hover:text-white transition-colors">Settings</Link>
+          </div>
+        </div>
       </footer>
-
-      <style jsx>{`
-        .app-container { min-height:100vh; background:#05060a; color:white; padding-bottom:3rem; }
-        .hero { position:relative; padding:8rem 1rem 6rem; text-align:center; overflow:hidden; }
-        .hero-content { position:relative; z-index:10; max-width:900px; margin:0 auto; }
-        .badge-main { display:inline-block; padding:.4rem 1rem; background:rgba(79,172,254,.1); border:1px solid rgba(79,172,254,.2); border-radius:100px; color:#4facfe; font-size:.75rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; margin-bottom:2rem; animation:fadeInDown .6s ease-out; }
-        h1 { font-size:clamp(2.5rem,8vw,4.5rem); font-weight:900; line-height:1.1; letter-spacing:-.03em; margin-bottom:1.5rem; animation:fadeInUp .6s ease-out .1s both; }
-        .hero-sub { font-size:1.125rem; color:#94a3b8; max-width:600px; margin:0 auto 3rem; line-height:1.6; animation:fadeInUp .6s ease-out .2s both; }
-        .cta-group { display:flex; align-items:center; justify-content:center; gap:1.25rem; flex-wrap:wrap; animation:fadeInUp .6s ease-out .3s both; }
-        .hero-cta { display:inline-flex; align-items:center; gap:.6rem; padding:.9rem 2rem; border-radius:100px; color:white; font-size:1rem; font-weight:700; text-decoration:none; transition:transform .2s,box-shadow .2s; box-shadow:0 4px 25px rgba(79,172,254,.35); }
-        .hero-cta:hover { transform:translateY(-2px); box-shadow:0 8px 35px rgba(79,172,254,.5); }
-        .hero-cta svg { width:18px; height:18px; }
-        .hero-cta-secondary { display:inline-flex; align-items:center; gap:.5rem; padding:.9rem 2rem; border-radius:100px; color:#94a3b8; font-size:1rem; font-weight:600; text-decoration:none; border:1px solid rgba(255,255,255,.1); background:rgba(255,255,255,.03); transition:all .2s; }
-        .hero-cta-secondary:hover { color:white; border-color:rgba(255,255,255,.25); }
-        .hero-cta-secondary svg { width:16px; height:16px; }
-        .blob { position:absolute; width:500px; height:500px; border-radius:50%; filter:blur(80px); z-index:1; pointer-events:none; }
-        .blob-1 { top:-100px; left:-100px; background:radial-gradient(circle,rgba(79,172,254,.15) 0%,transparent 70%); }
-        .blob-2 { bottom:-100px; right:-100px; background:radial-gradient(circle,rgba(0,242,254,.12) 0%,transparent 70%); }
-        .blob-3 { top:50%; left:50%; transform:translate(-50%,-50%); width:700px; height:700px; background:radial-gradient(circle,rgba(168,85,247,.06) 0%,transparent 70%); }
-        .features { margin-top:2rem; }
-        .features-grid { display:grid; grid-template-columns:1fr; gap:1.5rem; }
-        @media(min-width:768px) { .features-grid { grid-template-columns:repeat(3,1fr); } }
-        .feature-card { padding:2rem; border-radius:24px; transition:transform .25s,border-color .25s; }
-        .feature-card:hover { transform:translateY(-4px); border-color:rgba(255,255,255,.2); }
-        .feature-icon { width:48px; height:48px; border-radius:14px; display:flex; align-items:center; justify-content:center; margin-bottom:1.25rem; }
-        .feature-icon svg { width:24px; height:24px; }
-        .feature-card h3 { font-size:1.125rem; font-weight:700; margin-bottom:.5rem; }
-        .feature-card p { font-size:.875rem; color:#94a3b8; line-height:1.6; }
-        .stats-section { margin-top:5rem; }
-        .stats-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:1.5rem; }
-        @media(min-width:768px) { .stats-grid { grid-template-columns:repeat(4,1fr); } }
-        .stat-card { text-align:center; padding:2rem 1rem; }
-        .stat-value { display:block; font-size:2.5rem; font-weight:900; letter-spacing:-.03em; line-height:1; margin-bottom:.5rem; }
-        .stat-label { font-size:.8rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.05em; }
-        .footer { margin-top:6rem; text-align:center; color:#475569; font-size:.875rem; }
-        @keyframes fadeInDown { from{opacity:0;transform:translateY(-20px)} to{opacity:1;transform:translateY(0)} }
-        @keyframes fadeInUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
-      `}</style>
     </main>
   );
 }

@@ -1,0 +1,41 @@
+2026-05-16 23:24:23 | INFO     | app.utils.logger:setup_logging:42 — Logging initialised — level=INFO, file=logs/phishguard.log
+2026-05-16 23:24:23 | INFO     | app.main:lifespan:29 — ============================================================
+2026-05-16 23:24:23 | INFO     | app.main:lifespan:30 —   🛡️  PhishGuard AI v1.0.0
+2026-05-16 23:24:23 | INFO     | app.main:lifespan:31 —   Environment: development
+2026-05-16 23:24:23 | INFO     | app.main:lifespan:32 — ============================================================
+2026-05-16 23:24:24 | INFO     | app.ml.predictor:load_model:48 — Model loaded from app/models/phishguard_model.joblib
+2026-05-16 23:24:24 | INFO     | app.ml.predictor:load_model:52 — Scaler loaded from app/models/scaler.joblib
+2026-05-16 23:24:24 | INFO     | app.main:lifespan:38 —   Model: XGBClassifier
+2026-05-16 23:24:24 | INFO     | app.main:lifespan:39 —   Features: 36
+2026-05-16 23:24:24 | INFO     | app.main:lifespan:40 —   ✅ Model ready for inference
+2026-05-16 23:24:24 | INFO     | app.main:lifespan:45 —   API running on http://0.0.0.0:8000
+2026-05-16 23:24:24 | INFO     | app.main:lifespan:46 — ============================================================
+2026-05-16 23:24:37 | INFO     | app.api.routes:predict_url:69 — Predicted PHISHING (risk=89) for: http://secure-paypal-login.suspicious-domain.xyz/signin
+2026-05-16 23:24:46 | INFO     | app.api.routes:predict_url:69 — Predicted SAFE (risk=0) for: https://www.google.com
+2026-05-16 23:24:56 | INFO     | app.api.routes:batch_predict:133 — Batch prediction completed: 5 URLs processed
+2026-05-16 23:28:07 | INFO     | app.api.routes:predict_url:69 — Predicted PHISHING (risk=89) for: http://secure-paypal-login.xyz/signin
+2026-05-16 23:29:37 | INFO     | app.api.routes:predict_url:69 — Predicted SAFE (risk=0) for: https://www.youtube.com/
+2026-05-16 23:29:48 | INFO     | app.api.routes:predict_url:69 — Predicted SAFE (risk=34) for: https://www.youtubeuiiu.com/
+2026-05-16 23:30:01 | INFO     | app.api.routes:predict_url:69 — Predicted PHISHING (risk=89) for: http://secure-paypal-login.xyz/signin
+2026-05-16 23:30:14 | INFO     | app.api.routes:predict_url:69 — Predicted SAFE (risk=0) for: https://www.google.com
+2026-05-16 23:31:42 | INFO     | app.api.routes:predict_url:69 — Predicted SCAM (risk=65) for: https://www.gogle.com
+2026-05-16 23:32:45 | INFO     | app.api.routes:predict_url:69 — Predicted PHISHING (risk=68) for: http://www.gogle.com
+2026-05-16 23:32:46 | INFO     | app.api.routes:predict_url:69 — Predicted PHISHING (risk=68) for: http://www.gogle.com
+2026-05-16 23:32:52 | INFO     | app.api.routes:predict_url:69 — Predicted SCAM (risk=65) for: https://www.gogle.com
+2026-05-16 23:32:57 | INFO     | app.api.routes:predict_url:69 — Predicted SAFE (risk=0) for: https://www.google.com
+2026-05-16 23:34:57 | INFO     | app.api.routes:predict_url:69 — Predicted PHISHING (risk=69) for: mohanrathod.netlify.app
+2026-05-16 23:35:19 | INFO     | app.api.routes:predict_url:69 — Predicted PHISHING (risk=69) for: https;www.mohanrathod.netlify.app
+2026-05-16 23:35:20 | INFO     | app.api.routes:predict_url:69 — Predicted PHISHING (risk=69) for: https;www.mohanrathod.netlify.app
+2026-05-16 23:54:09 | INFO     | app.main:lifespan:51 — Shutting down PhishGuard AI...
+2026-05-16 23:54:11 | INFO     | app.utils.logger:setup_logging:42 — Logging initialised — level=INFO, file=logs/phishguard.log
+2026-05-16 23:54:11 | INFO     | app.main:lifespan:29 — ============================================================
+2026-05-16 23:54:11 | INFO     | app.main:lifespan:30 —   🛡️  PhishGuard AI v1.0.0
+2026-05-16 23:54:11 | INFO     | app.main:lifespan:31 —   Environment: development
+2026-05-16 23:54:11 | INFO     | app.main:lifespan:32 — ============================================================
+2026-05-16 23:54:13 | INFO     | app.ml.predictor:load_model:48 — Model loaded from app/models/phishguard_model.joblib
+2026-05-16 23:54:13 | INFO     | app.ml.predictor:load_model:52 — Scaler loaded from app/models/scaler.joblib
+2026-05-16 23:54:13 | INFO     | app.main:lifespan:38 —   Model: XGBClassifier
+2026-05-16 23:54:13 | INFO     | app.main:lifespan:39 —   Features: 36
+2026-05-16 23:54:13 | INFO     | app.main:lifespan:40 —   ✅ Model ready for inference
+2026-05-16 23:54:13 | INFO     | app.main:lifespan:45 —   API running on http://0.0.0.0:8000
+2026-05-16 23:54:13 | INFO     | app.main:lifespan:46 — ============================================================

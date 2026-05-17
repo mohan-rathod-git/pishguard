@@ -1,147 +1,149 @@
 'use client';
-import React from 'react';
 
-const Navbar = () => {
+import { motion } from 'framer-motion';
+import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { useState } from 'react';
+import {
+  Shield, Globe, QrCode, LayoutDashboard,
+  Activity, History, Settings, BookOpen, Menu, X, Zap
+} from 'lucide-react';
+
+const navItems = [
+  { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { label: 'URL Scanner', href: '/scan', icon: Globe },
+  { label: 'QR Scanner', href: '/qr', icon: QrCode },
+  { label: 'Live Monitor', href: '/monitor', icon: Activity },
+  { label: 'History', href: '/history', icon: History },
+  { label: 'Analytics', href: '/analytics', icon: Zap },
+  { label: 'API Docs', href: '/docs', icon: BookOpen },
+  { label: 'Settings', href: '/settings', icon: Settings },
+];
+
+export default function Navbar() {
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
   return (
-    <nav className="navbar glass">
-      <div className="nav-container">
-        <div className="logo-section">
-          <div className="logo-icon gradient-bg">
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
+    <>
+      <motion.nav
+        initial={{ y: -80, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.5, ease: 'easeOut' }}
+        className="fixed top-0 left-0 right-0 z-50"
+      >
+        <div
+          className="mx-4 mt-4 rounded-2xl"
+          style={{
+            background: 'rgba(8, 12, 20, 0.85)',
+            backdropFilter: 'blur(24px)',
+            WebkitBackdropFilter: 'blur(24px)',
+            border: '1px solid rgba(79,172,254,0.1)',
+            boxShadow: '0 4px 40px rgba(0,0,0,0.5)',
+          }}
+        >
+          <div className="flex items-center justify-between px-6 py-3">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <motion.div
+                whileHover={{ scale: 1.05, rotate: 5 }}
+                className="w-9 h-9 rounded-xl gradient-bg flex items-center justify-center shadow-glow-blue"
+              >
+                <Shield className="w-5 h-5 text-cyber-black" strokeWidth={2.5} />
+              </motion.div>
+              <div>
+                <span className="font-bold text-sm text-white tracking-tight">PhishGuard</span>
+                <span className="block text-[10px] text-cyber-muted font-mono tracking-wider">AI SECURITY</span>
+              </div>
+            </Link>
+
+            {/* Desktop nav */}
+            <div className="hidden lg:flex items-center gap-1">
+              {navItems.map((item) => {
+                const active = pathname === item.href;
+                const Icon = item.icon;
+                return (
+                  <Link key={item.href} href={item.href}>
+                    <motion.div
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      className={`flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-200 ${
+                        active
+                          ? 'gradient-bg text-cyber-black shadow-glow-blue'
+                          : 'text-cyber-muted hover:text-white hover:bg-white/5'
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" />
+                      {item.label}
+                    </motion.div>
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Right side */}
+            <div className="flex items-center gap-3">
+              <div className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyber-green/10 border border-cyber-green/20">
+                <span className="w-1.5 h-1.5 rounded-full bg-cyber-green animate-pulse-slow" />
+                <span className="text-xs font-semibold text-cyber-green">LIVE</span>
+              </div>
+
+              <Link href="/scan">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="hidden sm:flex cyber-btn cyber-btn-primary text-xs px-4 py-2"
+                >
+                  <Zap className="w-3.5 h-3.5" />
+                  Scan Now
+                </motion.button>
+              </Link>
+
+              {/* Mobile menu toggle */}
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                onClick={() => setMobileOpen(!mobileOpen)}
+                className="lg:hidden w-9 h-9 flex items-center justify-center rounded-xl bg-white/5 text-cyber-text"
+              >
+                {mobileOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+              </motion.button>
+            </div>
           </div>
-          <span className="logo-text">
-            Phish<span className="gradient-text">Guard AI</span>
-          </span>
         </div>
 
-        <div className="nav-links">
-          <a href="#">Analyzer</a>
-          <a href="#">Hindsight</a>
-          <a href="#">CascadeFlow</a>
-          <a href="#">Docs</a>
-        </div>
+        {/* Mobile menu */}
+        {mobileOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            className="lg:hidden mx-4 mt-2 rounded-2xl p-4 space-y-1"
+            style={{
+              background: 'rgba(8,12,20,0.95)',
+              backdropFilter: 'blur(24px)',
+              border: '1px solid rgba(79,172,254,0.1)',
+            }}
+          >
+            {navItems.map((item) => {
+              const active = pathname === item.href;
+              const Icon = item.icon;
+              return (
+                <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}>
+                  <div className={`flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
+                    active ? 'gradient-bg text-cyber-black' : 'text-cyber-text hover:text-white hover:bg-white/5'
+                  }`}>
+                    <Icon className="w-4 h-4" />
+                    {item.label}
+                  </div>
+                </Link>
+              );
+            })}
+          </motion.div>
+        )}
+      </motion.nav>
 
-        <div className="nav-actions">
-          <div className="status-badge">
-            <div className="status-dot animate-pulse"></div>
-            <span>System Online</span>
-          </div>
-          <button className="cta-button gradient-bg">Get Started</button>
-        </div>
-      </div>
-
-      <style jsx>{`
-        .navbar {
-          position: sticky;
-          top: 0;
-          z-index: 100;
-          width: 100%;
-          padding: 1rem 0;
-          border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .nav-container {
-          max-width: 1280px;
-          margin: 0 auto;
-          padding: 0 1.5rem;
-          display: flex;
-          align-items: center;
-          justify-content: space-between;
-        }
-        .logo-section {
-          display: flex;
-          align-items: center;
-          gap: 0.75rem;
-        }
-        .logo-icon {
-          width: 40px;
-          height: 40px;
-          border-radius: 10px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
-        }
-        .logo-icon svg {
-          width: 24px;
-          height: 24px;
-        }
-        .logo-text {
-          font-size: 1.25rem;
-          font-weight: 800;
-          letter-spacing: -0.02em;
-        }
-        .nav-links {
-          display: none;
-        }
-        @media (min-width: 768px) {
-          .nav-links {
-            display: flex;
-            gap: 2rem;
-          }
-        }
-        .nav-links a {
-          color: #94a3b8;
-          text-decoration: none;
-          font-size: 0.875rem;
-          font-weight: 500;
-          transition: color 0.2s;
-        }
-        .nav-links a:hover {
-          color: white;
-        }
-        .nav-actions {
-          display: flex;
-          align-items: center;
-          gap: 1.5rem;
-        }
-        .status-badge {
-          display: none;
-          align-items: center;
-          gap: 0.5rem;
-          background: rgba(255, 255, 255, 0.05);
-          padding: 0.4rem 0.8rem;
-          border-radius: 100px;
-          border: 1px solid rgba(255, 255, 255, 0.1);
-        }
-        @media (min-width: 640px) {
-          .status-badge {
-            display: flex;
-          }
-        }
-        .status-dot {
-          width: 8px;
-          height: 8px;
-          background: #43e97b;
-          border-radius: 50%;
-          box-shadow: 0 0 10px #43e97b;
-        }
-        .status-badge span {
-          font-size: 0.75rem;
-          color: #43e97b;
-          font-weight: 700;
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-        }
-        .cta-button {
-          padding: 0.6rem 1.25rem;
-          border-radius: 100px;
-          color: white;
-          font-size: 0.875rem;
-          font-weight: 700;
-          border: none;
-          cursor: pointer;
-          transition: transform 0.2s, box-shadow 0.2s;
-          box-shadow: 0 4px 15px rgba(79, 172, 254, 0.3);
-        }
-        .cta-button:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 6px 20px rgba(79, 172, 254, 0.4);
-        }
-      `}</style>
-    </nav>
+      {/* Spacer */}
+      <div className="h-24" />
+    </>
   );
-};
-
-export default Navbar;
+}

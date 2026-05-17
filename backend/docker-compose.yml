@@ -1,0 +1,27 @@
+version: "3.9"
+
+services:
+  phishguard-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: phishguard-api
+    ports:
+      - "8000:8000"
+    environment:
+      - APP_ENV=production
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+      - API_WORKERS=4
+      - LOG_LEVEL=INFO
+      - RATE_LIMIT=100/minute
+    volumes:
+      - ./app/models:/app/app/models
+      - ./app/datasets:/app/app/datasets
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3

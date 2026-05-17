@@ -1,0 +1,41 @@
+# ─── PhishGuard AI Backend ───
+# Core API
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+pydantic>=2.10.0
+pydantic-settings>=2.7.0
+python-dotenv>=1.0.0
+
+# ML / Data Science
+scikit-learn>=1.6.0
+xgboost>=2.1.0
+pandas>=2.2.0
+numpy>=2.1.0
+joblib>=1.4.0
+scipy>=1.14.0
+
+# Feature extraction
+tldextract>=5.1.0
+validators>=0.34.0
+
+# Security / Rate-limiting
+slowapi>=0.1.9
+bleach>=6.2.0
+
+# Logging / Monitoring
+loguru>=0.7.0
+rich>=13.9.0
+
+# QR Security Engine
+opencv-python-headless>=4.10.0
+pyzbar>=0.1.9
+Pillow>=10.4.0
+python-multipart>=0.0.12
+
+# Testing
+httpx>=0.28.0
+pytest>=8.3.0
+pytest-asyncio>=0.25.0
+
+# Optional: Advanced sandbox scanning
+# playwright>=1.48.0

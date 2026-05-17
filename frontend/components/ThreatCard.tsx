@@ -1,12 +1,22 @@
 'use client';
 import React from 'react';
+import { Anomaly } from '../services/api';
 
-const ThreatCard = () => {
-  const anomalies = [
-    { title: 'Suspicious Domain', desc: 'Domain structure mimics microsoft-login but uses .net TLD.', impact: 'High' },
-    { title: 'Redirect Pattern', desc: 'Found 3 hidden redirects before landing page.', impact: 'Medium' },
-    { title: 'UI Clone Detected', desc: 'Visual features match known phishing templates in memory.', impact: 'Critical' },
-  ];
+interface ThreatCardProps {
+  anomalies?: Anomaly[];
+  confidence?: number;
+  latency?: number;
+}
+
+const ThreatCard = ({ anomalies, confidence, latency }: ThreatCardProps) => {
+  const displayAnomalies = anomalies && anomalies.length > 0
+    ? anomalies
+    : [
+        { title: 'No Threats', description: 'No specific risk indicators detected.', impact: 'Low' as const },
+      ];
+
+  const displayConfidence = confidence ?? 0;
+  const displayLatency = latency ?? 0;
 
   return (
     <div className="threat-card glass">
@@ -17,11 +27,11 @@ const ThreatCard = () => {
           </svg>
           <h3>AI Reasoning Engine</h3>
         </div>
-        <div className="route-badge">Premium Route</div>
+        <div className="route-badge">Live Analysis</div>
       </div>
 
       <div className="anomalies-list">
-        {anomalies.map((item, index) => (
+        {displayAnomalies.map((item, index) => (
           <div key={index} className="anomaly-item">
             <div className={`impact-bar ${item.impact.toLowerCase()}`}></div>
             <div className="anomaly-content">
@@ -29,7 +39,7 @@ const ThreatCard = () => {
                 <span className="anomaly-title">{item.title}</span>
                 <span className={`impact-label ${item.impact.toLowerCase()}`}>{item.impact}</span>
               </div>
-              <p className="anomaly-desc">{item.desc}</p>
+              <p className="anomaly-desc">{item.description}</p>
             </div>
           </div>
         ))}
@@ -37,11 +47,11 @@ const ThreatCard = () => {
 
       <div className="card-footer">
         <div className="stats-row">
-          <span>ML Confidence: 98.4%</span>
-          <span>Latency: 240ms</span>
+          <span>ML Confidence: {displayConfidence}%</span>
+          <span>Latency: {displayLatency}ms</span>
         </div>
         <div className="progress-bar">
-          <div className="progress-fill" style={{ width: '98.4%' }}></div>
+          <div className="progress-fill" style={{ width: `${Math.min(displayConfidence, 100)}%` }}></div>
         </div>
       </div>
 
@@ -108,6 +118,7 @@ const ThreatCard = () => {
         .impact-bar.critical { background: #ff4e50; }
         .impact-bar.high { background: #f97316; }
         .impact-bar.medium { background: #facc15; }
+        .impact-bar.low { background: #22c55e; }
 
         .anomaly-content {
           flex: 1;
@@ -133,6 +144,7 @@ const ThreatCard = () => {
         .impact-label.critical { background: rgba(255, 78, 80, 0.15); color: #ff4e50; }
         .impact-label.high { background: rgba(249, 115, 22, 0.15); color: #f97316; }
         .impact-label.medium { background: rgba(250, 204, 21, 0.15); color: #facc15; }
+        .impact-label.low { background: rgba(34, 197, 94, 0.15); color: #22c55e; }
 
         .anomaly-desc {
           font-size: 0.8125rem;
@@ -163,6 +175,7 @@ const ThreatCard = () => {
           height: 100%;
           background: #4facfe;
           border-radius: 10px;
+          transition: width 0.5s ease-out;
         }
       `}</style>
     </div>

@@ -1,140 +1,102 @@
 'use client';
-import React from 'react';
+
+import { motion } from 'framer-motion';
+import { getRiskColor, getRiskLabel } from '@/lib/utils';
 
 interface RiskMeterProps {
   score: number;
+  size?: 'sm' | 'md' | 'lg';
+  showLabel?: boolean;
 }
 
-const RiskMeter: React.FC<RiskMeterProps> = ({ score = 0 }) => {
-  const getStatus = () => {
-    if (score < 30) return { label: 'Safe', color: '#43e97b', glow: 'rgba(67, 233, 123, 0.3)' };
-    if (score < 70) return { label: 'Suspicious', color: '#f9d423', glow: 'rgba(249, 212, 35, 0.3)' };
-    return { label: 'High Risk', color: '#ff4e50', glow: 'rgba(255, 78, 80, 0.3)' };
+export default function RiskMeter({ score, size = 'md', showLabel = true }: RiskMeterProps) {
+  const clampedScore = Math.max(0, Math.min(100, score));
+  const color = getRiskColor(clampedScore);
+  const label = getRiskLabel(clampedScore);
+
+  const sizes = {
+    sm: { r: 40, stroke: 6, fontSize: 'text-lg', labelSize: 'text-[10px]', wrapper: 'w-24 h-24' },
+    md: { r: 56, stroke: 8, fontSize: 'text-2xl', labelSize: 'text-xs', wrapper: 'w-32 h-32' },
+    lg: { r: 72, stroke: 10, fontSize: 'text-3xl', labelSize: 'text-sm', wrapper: 'w-44 h-44' },
   };
 
-  const status = getStatus();
-  const radius = 70;
-  const circumference = 2 * Math.PI * radius;
-  const offset = circumference - (score / 100) * circumference;
+  const { r, stroke, fontSize, labelSize, wrapper } = sizes[size];
+  const cx = r + stroke;
+  const cy = r + stroke;
+  const circumference = 2 * Math.PI * r;
+  const dashOffset = circumference - (clampedScore / 100) * circumference;
+  const svgSize = (r + stroke) * 2;
 
   return (
-    <div className="risk-container glass">
-      <div className="status-overlay" style={{ background: status.color }}></div>
-      
-      <div className="gauge-wrapper">
-        <svg viewBox="0 0 200 200">
-          <circle cx="100" cy="100" r={radius} className="bg-circle" />
-          <circle 
-            cx="100" cy="100" r={radius} 
-            className="progress-circle"
-            style={{ 
-              stroke: status.color,
-              strokeDasharray: circumference,
-              strokeDashoffset: offset,
-              filter: `drop-shadow(0 0 8px ${status.glow})`
-            }}
+    <div className="flex flex-col items-center gap-3">
+      <div className={`relative ${wrapper} flex items-center justify-center`}>
+        <svg
+          width={svgSize}
+          height={svgSize}
+          viewBox={`0 0 ${svgSize} ${svgSize}`}
+          className="absolute inset-0 -rotate-90"
+          style={{ width: '100%', height: '100%' }}
+        >
+          {/* Background track */}
+          <circle
+            cx={cx}
+            cy={cy}
+            r={r}
+            fill="none"
+            stroke="rgba(30,45,69,0.5)"
+            strokeWidth={stroke}
+          />
+          {/* Progress arc */}
+          <motion.circle
+            cx={cx}
+            cy={cy}
+            r={r}
+            fill="none"
+            stroke={color}
+            strokeWidth={stroke}
+            strokeLinecap="round"
+            strokeDasharray={circumference}
+            initial={{ strokeDashoffset: circumference }}
+            animate={{ strokeDashoffset: dashOffset }}
+            transition={{ duration: 1.2, ease: 'easeOut' }}
+            style={{ filter: `drop-shadow(0 0 8px ${color})` }}
           />
         </svg>
 
-        <div className="text-overlay">
-          <div className="score" style={{ color: status.color }}>{score}%</div>
-          <div className="label">Threat Probability</div>
+        {/* Center text */}
+        <div className="relative z-10 text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.5 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ delay: 0.4, duration: 0.5 }}
+            className={`font-black ${fontSize} leading-none`}
+            style={{ color }}
+          >
+            {clampedScore}
+          </motion.div>
+          <div className={`font-mono ${labelSize} text-cyber-muted mt-0.5`}>/100</div>
         </div>
       </div>
 
-      <div className="status-footer">
-        <div className="status-pill" style={{ 
-          borderColor: `${status.color}40`, 
-          color: status.color,
-          background: `${status.color}15`
-        }}>
-          {status.label}
-        </div>
-        <p>Adaptive pattern analysis engine active.</p>
-      </div>
-
-      <style jsx>{`
-        .risk-container {
-          padding: 2.5rem;
-          border-radius: 30px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          position: relative;
-          overflow: hidden;
-        }
-        .status-overlay {
-          position: absolute;
-          inset: 0;
-          opacity: 0.05;
-          pointer-events: none;
-        }
-        .gauge-wrapper {
-          position: relative;
-          width: 200px;
-          height: 200px;
-        }
-        svg {
-          width: 100%;
-          height: 100%;
-          transform: rotate(-90deg);
-        }
-        .bg-circle {
-          fill: none;
-          stroke: rgba(255, 255, 255, 0.05);
-          stroke-width: 12;
-        }
-        .progress-circle {
-          fill: none;
-          stroke-width: 12;
-          stroke-linecap: round;
-          transition: stroke-dashoffset 1s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        .text-overlay {
-          position: absolute;
-          inset: 0;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: center;
-        }
-        .score {
-          font-size: 3.5rem;
-          font-weight: 900;
-          letter-spacing: -0.05em;
-          line-height: 0.9;
-          margin-bottom: 0.5rem;
-        }
-        .label {
-          font-size: 0.7rem;
-          font-weight: 800;
-          text-transform: uppercase;
-          letter-spacing: 0.15em;
-          color: #94a3b8;
-        }
-        .status-footer {
-          margin-top: 1.5rem;
-          text-align: center;
-          z-index: 10;
-        }
-        .status-pill {
-          display: inline-block;
-          padding: 0.25rem 1rem;
-          border-radius: 100px;
-          font-size: 0.875rem;
-          font-weight: 800;
-          border: 1px solid;
-          margin-bottom: 0.75rem;
-        }
-        p {
-          font-size: 0.875rem;
-          color: #94a3b8;
-          max-width: 200px;
-          margin: 0 auto;
-        }
-      `}</style>
+      {showLabel && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.6 }}
+          className="flex items-center gap-2"
+        >
+          <span
+            className="w-2 h-2 rounded-full"
+            style={{ backgroundColor: color, boxShadow: `0 0 8px ${color}` }}
+          />
+          <span
+            className="font-mono font-bold tracking-widest text-xs"
+            style={{ color }}
+          >
+            {label}
+          </span>
+        </motion.div>
+      )}
     </div>
   );
-};
-
-export default RiskMeter;
+}

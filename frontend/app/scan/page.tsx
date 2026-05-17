@@ -1,206 +1,285 @@
 'use client';
 
-import React, { useState, useCallback } from 'react';
-import Navbar from '../../components/Navbar';
-import UrlInput from '../../components/UrlInput';
-import RiskMeter from '../../components/RiskMeter';
-import ThreatCard from '../../components/ThreatCard';
-import { analyzeUrl, AnalysisResult } from '../../services/api';
+import { motion } from 'framer-motion';
+import { useState, useCallback, useRef } from 'react';
+import Navbar from '@/components/Navbar';
+import RiskMeter from '@/components/RiskMeter';
+import ThreatResultCard from '@/components/ThreatResultCard';
+import { predictUrl } from '@/lib/api';
+import { PredictionResponse } from '@/types';
+import { useAppStore } from '@/store/useAppStore';
+import toast from 'react-hot-toast';
+import {
+  Globe, Zap, Shield, Search, X,
+  ChevronRight, AlertTriangle, CheckCircle
+} from 'lucide-react';
 
-type ScanState = 'idle' | 'scanning' | 'done' | 'error';
+const EXAMPLE_URLS = [
+  'https://google.com',
+  'http://paypal-secure-login.ru/account/verify',
+  'https://github.com',
+  'http://free-iphone15.giveaway.xyz/claim',
+];
 
 export default function ScanPage() {
-  const [scanState, setScanState] = useState<ScanState>('idle');
-  const [result, setResult] = useState<AnalysisResult | null>(null);
-  const [errorMsg, setErrorMsg] = useState('');
-  const [inputUrl, setInputUrl] = useState('');
+  const [url, setUrl] = useState('');
+  const [scanning, setScanning] = useState(false);
+  const [result, setResult] = useState<PredictionResponse | null>(null);
+  const [error, setError] = useState('');
+  const inputRef = useRef<HTMLInputElement>(null);
+  const { addHistory, incrementScans, incrementBlocked } = useAppStore();
 
-  const handleScan = useCallback(async () => {
-    const trimmed = inputUrl.trim();
-    if (!trimmed) return;
+  const handleScan = useCallback(async (targetUrl?: string) => {
+    const scanUrl = targetUrl || url.trim();
+    if (!scanUrl) return;
 
-    setScanState('scanning');
-    setErrorMsg('');
+    setScanning(true);
+    setError('');
     setResult(null);
 
     try {
-      const data = await analyzeUrl(trimmed);
+      const data = await predictUrl(scanUrl);
       setResult(data);
-      setScanState('done');
+      setUrl(scanUrl);
+
+      // Update store
+      addHistory({
+        type: 'url',
+        input: scanUrl,
+        prediction: data.prediction,
+        risk_score: data.risk_score,
+        status: 'SCANNED',
+      });
+      incrementScans();
+      if (data.prediction !== 'SAFE') incrementBlocked();
+
+      if (data.prediction === 'SAFE') {
+        toast.success('URL appears safe!');
+      } else {
+        toast.error(`Threat detected: ${data.prediction}`);
+      }
     } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'An unexpected error occurred.';
-      setErrorMsg(message);
-      setScanState('error');
+      const msg = err instanceof Error ? err.message : 'Scan failed';
+      setError(msg);
+      toast.error(msg);
+    } finally {
+      setScanning(false);
     }
-  }, [inputUrl]);
+  }, [url, addHistory, incrementScans, incrementBlocked]);
+
+  const reset = () => {
+    setResult(null);
+    setError('');
+    setUrl('');
+    inputRef.current?.focus();
+  };
 
   return (
-    <main className="app-container">
+    <main className="min-h-screen relative">
+      <div className="fixed inset-0 cyber-grid opacity-30 pointer-events-none" />
+      <div className="fixed top-0 left-0 w-[600px] h-[600px] bg-cyber-blue/5 rounded-full blur-[150px] pointer-events-none" />
+      <div className="fixed bottom-0 right-0 w-[400px] h-[400px] bg-cyber-purple/5 rounded-full blur-[120px] pointer-events-none" />
+
       <Navbar />
 
-      <section className="scan-hero">
-        <div className="scan-hero-content">
-          <div className="page-badge">URL Analyzer</div>
-          <h1>Scan a <span className="gradient-text">Suspicious URL</span></h1>
-          <p className="scan-sub">
-            Enter any URL below to run a deep AI-powered phishing analysis.
+      <div className="relative z-10 container max-w-4xl py-8">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center mb-10"
+        >
+          <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-bold uppercase tracking-widest mb-5"
+            style={{ background: 'rgba(79,172,254,0.1)', border: '1px solid rgba(79,172,254,0.2)', color: '#4facfe' }}>
+            <Globe className="w-3.5 h-3.5" />
+            URL Threat Scanner
+          </div>
+          <h1 className="text-display text-4xl md:text-5xl font-black mb-4">
+            Scan a <span className="gradient-text">Suspicious URL</span>
+          </h1>
+          <p className="text-cyber-text max-w-xl mx-auto">
+            Deep AI-powered analysis: phishing detection, malware classification, and explainable threat scoring.
           </p>
-        </div>
-        <div className="blob b1"></div>
-        <div className="blob b2"></div>
-      </section>
+        </motion.div>
 
-      {/* Custom URL Input with scan trigger */}
-      <section className="scan-input-section container">
-        <div className="custom-input glass">
-          <div className="icon-box">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9" />
-            </svg>
-          </div>
-          <input
-            type="text"
-            placeholder="Enter suspicious URL for deep analysis..."
-            value={inputUrl}
-            onChange={(e) => setInputUrl(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && handleScan()}
-            disabled={scanState === 'scanning'}
-          />
-          <button
-            className="gradient-bg scan-btn"
-            onClick={handleScan}
-            disabled={scanState === 'scanning' || !inputUrl.trim()}
-          >
-            {scanState === 'scanning' ? (
-              <>
-                <span className="spinner"></span>
-                <span>Analyzing...</span>
-              </>
-            ) : (
-              <>
-                <span>Analyze</span>
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-                </svg>
-              </>
+        {/* Input */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="glass-card p-2 mb-4"
+          style={{ borderColor: scanning ? 'rgba(79,172,254,0.5)' : undefined }}
+        >
+          <div className="flex items-center gap-3 p-3">
+            <div className="flex-shrink-0 w-10 h-10 rounded-xl gradient-bg flex items-center justify-center">
+              <Globe className="w-5 h-5 text-cyber-black" />
+            </div>
+            <input
+              ref={inputRef}
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleScan()}
+              placeholder="Enter URL to analyze... e.g. https://suspicious-site.com"
+              disabled={scanning}
+              className="flex-1 bg-transparent outline-none text-white placeholder:text-cyber-muted/60 text-sm font-mono"
+            />
+            {url && (
+              <button onClick={reset} className="text-cyber-muted hover:text-white transition-colors">
+                <X className="w-4 h-4" />
+              </button>
             )}
-          </button>
-        </div>
-
-        <div className="badges-row">
-          <div className="badge"><span className="dot blue"></span> Hindsight Memory Active</div>
-          <div className="badge"><span className="dot cyan"></span> CascadeFlow Routing</div>
-          <div className="badge"><span className="dot purple"></span> Real-time Prediction</div>
-        </div>
-      </section>
-
-      {/* Error State */}
-      {scanState === 'error' && (
-        <section className="container error-section">
-          <div className="error-card glass">
-            <svg viewBox="0 0 24 24" fill="none" stroke="#ff4e50" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="15" y1="9" x2="9" y2="15" />
-              <line x1="9" y1="9" x2="15" y2="15" />
-            </svg>
-            <p>{errorMsg}</p>
-            <button onClick={handleScan} className="gradient-bg retry-btn">Retry</button>
+            <motion.button
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => handleScan()}
+              disabled={scanning || !url.trim()}
+              className="cyber-btn cyber-btn-primary text-sm px-6 py-3 rounded-xl disabled:opacity-50 flex-shrink-0"
+            >
+              {scanning ? (
+                <>
+                  <span className="w-4 h-4 border-2 border-cyber-black/30 border-t-cyber-black rounded-full animate-spin" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Zap className="w-4 h-4" />
+                  Analyze
+                </>
+              )}
+            </motion.button>
           </div>
-        </section>
-      )}
+        </motion.div>
 
-      {/* Scanning Animation */}
-      {scanState === 'scanning' && (
-        <section className="container scanning-section">
-          <div className="scanning-card glass">
-            <div className="scan-anim">
-              <div className="ring r1"></div>
-              <div className="ring r2"></div>
-              <div className="ring r3"></div>
-              <svg viewBox="0 0 24 24" fill="none" stroke="#4facfe" strokeWidth="2" className="shield-icon">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
+        {/* Example URLs */}
+        {!result && !scanning && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.2 }}
+            className="flex flex-wrap gap-2 justify-center mb-8"
+          >
+            <span className="text-xs text-cyber-muted mr-2 self-center">Try:</span>
+            {EXAMPLE_URLS.map((exUrl) => (
+              <button
+                key={exUrl}
+                onClick={() => handleScan(exUrl)}
+                className="text-xs font-mono px-3 py-1.5 rounded-lg bg-cyber-surface/50 border border-cyber-border/40 text-cyber-text hover:text-white hover:border-cyber-blue/40 transition-all"
+              >
+                {exUrl.length > 35 ? exUrl.slice(0, 35) + '…' : exUrl}
+              </button>
+            ))}
+          </motion.div>
+        )}
+
+        {/* Status indicators */}
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.3 }}
+          className="flex items-center justify-center gap-6 mb-8"
+        >
+          {[
+            { label: 'ML Model Active', color: '#10b981' },
+            { label: 'QR Engine Ready', color: '#4facfe' },
+            { label: 'Batch API Online', color: '#a855f7' },
+          ].map((s) => (
+            <div key={s.label} className="flex items-center gap-1.5 text-xs text-cyber-muted">
+              <span className="w-1.5 h-1.5 rounded-full animate-pulse-slow" style={{ backgroundColor: s.color, boxShadow: `0 0 6px ${s.color}` }} />
+              {s.label}
             </div>
-            <h3>Analyzing URL...</h3>
-            <p className="scan-detail">Running through CascadeFlow AI pipeline</p>
-          </div>
-        </section>
-      )}
+          ))}
+        </motion.div>
 
-      {/* Results */}
-      {scanState === 'done' && result && (
-        <section className="results-grid container">
-          <div className="res-left">
-            <div className="scanned-url glass">
-              <span className="url-label">Scanned URL</span>
-              <span className="url-value">{result.url}</span>
+        {/* Scanning animation */}
+        {scanning && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-card p-10 text-center mb-8"
+          >
+            <div className="relative w-24 h-24 mx-auto mb-6">
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 3, repeat: Infinity, ease: 'linear' }}
+                className="absolute inset-0 border-2 border-transparent border-t-cyber-blue rounded-full"
+              />
+              <motion.div
+                animate={{ rotate: -360 }}
+                transition={{ duration: 2, repeat: Infinity, ease: 'linear' }}
+                className="absolute inset-3 border-2 border-transparent border-t-cyber-purple rounded-full"
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Shield className="w-8 h-8 text-cyber-blue" />
+              </div>
             </div>
-            <RiskMeter score={result.probability} />
-          </div>
-          <div className="res-right">
-            <ThreatCard />
-          </div>
-        </section>
-      )}
+            <h3 className="text-lg font-bold text-white mb-2">Analyzing URL...</h3>
+            <p className="text-sm text-cyber-muted">Running XGBoost classifier · Checking reputation · Extracting features</p>
+            <div className="mt-4 h-1 bg-cyber-border/30 rounded-full overflow-hidden max-w-xs mx-auto">
+              <motion.div
+                className="h-full gradient-bg rounded-full"
+                animate={{ x: ['-100%', '100%'] }}
+                transition={{ duration: 1.5, repeat: Infinity, ease: 'easeInOut' }}
+              />
+            </div>
+          </motion.div>
+        )}
 
-      <style jsx>{`
-        .app-container { min-height:100vh; background:#05060a; color:white; padding-bottom:4rem; }
-        .scan-hero { position:relative; padding:5rem 1rem 2rem; text-align:center; overflow:hidden; }
-        .scan-hero-content { position:relative; z-index:10; }
-        .page-badge { display:inline-block; padding:.3rem .8rem; background:rgba(79,172,254,.1); border:1px solid rgba(79,172,254,.2); border-radius:100px; color:#4facfe; font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; margin-bottom:1.5rem; }
-        h1 { font-size:clamp(2rem,6vw,3.5rem); font-weight:900; line-height:1.1; letter-spacing:-.03em; margin-bottom:1rem; }
-        .scan-sub { font-size:1rem; color:#94a3b8; max-width:500px; margin:0 auto; }
-        .blob { position:absolute; width:400px; height:400px; border-radius:50%; filter:blur(80px); z-index:1; pointer-events:none; }
-        .b1 { top:-80px; left:-80px; background:radial-gradient(circle,rgba(79,172,254,.12) 0%,transparent 70%); }
-        .b2 { bottom:-80px; right:-80px; background:radial-gradient(circle,rgba(0,242,254,.1) 0%,transparent 70%); }
+        {/* Error */}
+        {error && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-card p-5 mb-8 flex items-center gap-3"
+            style={{ borderColor: 'rgba(239,68,68,0.3)' }}
+          >
+            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0" />
+            <div>
+              <div className="font-semibold text-red-400 text-sm">Scan Failed</div>
+              <div className="text-xs text-cyber-text mt-0.5">{error}</div>
+            </div>
+            <button onClick={reset} className="ml-auto text-xs cyber-btn cyber-btn-secondary px-3 py-1.5">Retry</button>
+          </motion.div>
+        )}
 
-        .scan-input-section { margin-top:2rem; max-width:800px; }
-        .custom-input { display:flex; align-items:center; padding:.5rem; border-radius:20px; gap:1rem; transition:border-color .3s,box-shadow .3s; }
-        .custom-input:focus-within { border-color:rgba(79,172,254,.5); box-shadow:0 0 30px rgba(79,172,254,.15); }
-        .icon-box { padding-left:1rem; display:flex; align-items:center; color:#64748b; }
-        .icon-box svg { width:20px; height:20px; }
-        input { flex:1; background:transparent; border:none; outline:none; color:white; font-size:1.125rem; padding:.75rem 0; }
-        input:disabled { opacity:.5; }
-        .scan-btn { padding:.75rem 1.75rem; border-radius:14px; border:none; color:white; font-weight:700; display:flex; align-items:center; gap:.5rem; cursor:pointer; transition:transform .2s; font-size:.95rem; }
-        .scan-btn:hover:not(:disabled) { transform:scale(1.02); }
-        .scan-btn:disabled { opacity:.6; cursor:not-allowed; }
-        .scan-btn svg { width:16px; height:16px; }
-        .spinner { width:16px; height:16px; border:2px solid rgba(255,255,255,.3); border-top-color:white; border-radius:50%; animation:spin .6s linear infinite; }
+        {/* Results */}
+        {result && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="space-y-6"
+          >
+            {/* URL display */}
+            <div className="glass-card p-4">
+              <div className="text-xs font-mono text-cyber-muted uppercase tracking-widest mb-1">Scanned URL</div>
+              <div className="font-mono text-sm text-cyber-text break-all">{result.url}</div>
+            </div>
 
-        .badges-row { display:flex; justify-content:center; gap:1.5rem; margin-top:1.5rem; flex-wrap:wrap; }
-        .badge { display:flex; align-items:center; gap:.5rem; font-size:.75rem; font-weight:600; color:#64748b; text-transform:uppercase; letter-spacing:.05em; }
-        .dot { width:6px; height:6px; border-radius:50%; }
-        .dot.blue { background:#3b82f6; box-shadow:0 0 8px #3b82f6; }
-        .dot.cyan { background:#06b6d4; box-shadow:0 0 8px #06b6d4; }
-        .dot.purple { background:#a855f7; box-shadow:0 0 8px #a855f7; }
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Risk Meter */}
+              <div className="glass-card p-6 flex flex-col items-center justify-center">
+                <div className="text-xs font-mono text-cyber-muted uppercase tracking-widest mb-4">Risk Score</div>
+                <RiskMeter score={result.risk_score} size="lg" />
+              </div>
 
-        .error-section { margin-top:2rem; max-width:600px; }
-        .error-card { padding:2rem; border-radius:20px; text-align:center; display:flex; flex-direction:column; align-items:center; gap:1rem; border-color:rgba(255,78,80,.2); }
-        .error-card svg { width:40px; height:40px; }
-        .error-card p { color:#ff8a8c; font-size:.9rem; }
-        .retry-btn { padding:.5rem 1.5rem; border:none; border-radius:10px; color:white; font-weight:700; cursor:pointer; font-size:.85rem; }
+              {/* Threat Result */}
+              <div className="md:col-span-2">
+                <ThreatResultCard result={result} type="url" />
+              </div>
+            </div>
 
-        .scanning-section { margin-top:3rem; max-width:500px; }
-        .scanning-card { padding:3rem 2rem; border-radius:24px; text-align:center; display:flex; flex-direction:column; align-items:center; }
-        .scan-anim { position:relative; width:100px; height:100px; margin-bottom:1.5rem; }
-        .ring { position:absolute; inset:0; border:2px solid rgba(79,172,254,.15); border-radius:50%; }
-        .r1 { animation:ping 1.5s cubic-bezier(0,0,.2,1) infinite; }
-        .r2 { animation:ping 1.5s cubic-bezier(0,0,.2,1) infinite .3s; }
-        .r3 { animation:ping 1.5s cubic-bezier(0,0,.2,1) infinite .6s; }
-        .shield-icon { position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:36px; height:36px; }
-        .scanning-card h3 { font-size:1.125rem; font-weight:700; margin-bottom:.5rem; }
-        .scan-detail { font-size:.8rem; color:#64748b; }
-
-        .results-grid { display:grid; grid-template-columns:1fr; gap:2rem; margin-top:3rem; }
-        @media(min-width:1024px) { .results-grid { grid-template-columns:1fr 1.5fr; } }
-        .res-left { display:flex; flex-direction:column; gap:1.5rem; }
-        .scanned-url { padding:1.25rem 1.5rem; border-radius:16px; display:flex; flex-direction:column; gap:.25rem; }
-        .url-label { font-size:.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:#64748b; }
-        .url-value { font-size:.9rem; font-weight:600; color:#cbd5e1; word-break:break-all; }
-
-        @keyframes spin { to { transform:rotate(360deg); } }
-        @keyframes ping { 75%,100% { transform:scale(2); opacity:0; } }
-      `}</style>
+            {/* Scan again */}
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              onClick={reset}
+              className="w-full cyber-btn cyber-btn-secondary py-3 rounded-xl text-sm"
+            >
+              <Search className="w-4 h-4" />
+              Scan Another URL
+            </motion.button>
+          </motion.div>
+        )}
+      </div>
     </main>
   );
 }

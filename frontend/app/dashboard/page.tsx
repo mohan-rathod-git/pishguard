@@ -1,136 +1,297 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import Navbar from '../../components/Navbar';
-import ThreatHistory from '../../components/ThreatHistory';
-import { checkHealth, HealthStatus } from '../../services/api';
+import { motion } from 'framer-motion';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import Navbar from '@/components/Navbar';
+import RiskMeter from '@/components/RiskMeter';
+import HistoryTable from '@/components/HistoryTable';
+import { useAppStore } from '@/store/useAppStore';
+import { getHealth, getQRHealth, getModelInfo } from '@/lib/api';
+import {
+  Shield, Globe, QrCode, Activity, Zap,
+  TrendingUp, TrendingDown, AlertTriangle, CheckCircle,
+  ArrowRight, RefreshCw, Cpu, Server, Lock
+} from 'lucide-react';
+
+const MOCK_THREATS = [
+  { url: 'http://paypal-verify.ru/login', type: 'PHISHING', risk: 96, time: '2s ago' },
+  { url: 'https://bit.ly/3xFreeGift', type: 'SCAM', risk: 82, time: '18s ago' },
+  { url: 'http://malware-cdn.xyz/payload.exe', type: 'MALWARE', risk: 99, time: '45s ago' },
+  { url: 'http://fake-upi-payment.in/qr', type: 'PHISHING', risk: 91, time: '1m ago' },
+  { url: 'https://spam-casino-bet.net', type: 'SPAM', risk: 74, time: '2m ago' },
+];
+
+const THREAT_COLORS: Record<string, string> = {
+  PHISHING: '#ef4444',
+  MALWARE: '#dc2626',
+  SCAM: '#f97316',
+  SPAM: '#eab308',
+  SAFE: '#10b981',
+};
+
+function MetricCard({
+  label, value, subtext, icon: Icon, color, trend
+}: {
+  label: string; value: string; subtext?: string;
+  icon: React.ElementType; color: string; trend?: 'up' | 'down';
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      whileHover={{ y: -3 }}
+      className="glass-card p-5"
+    >
+      <div className="flex items-start justify-between mb-4">
+        <div
+          className="w-10 h-10 rounded-xl flex items-center justify-center"
+          style={{ background: `${color}15`, border: `1px solid ${color}30` }}
+        >
+          <Icon className="w-5 h-5" style={{ color }} />
+        </div>
+        {trend && (
+          <div className={`flex items-center gap-1 text-xs font-semibold ${trend === 'up' ? 'text-emerald-400' : 'text-red-400'}`}>
+            {trend === 'up' ? <TrendingUp className="w-3.5 h-3.5" /> : <TrendingDown className="w-3.5 h-3.5" />}
+          </div>
+        )}
+      </div>
+      <div className="text-2xl font-black text-white mb-0.5">{value}</div>
+      <div className="text-xs font-semibold text-cyber-muted uppercase tracking-wider">{label}</div>
+      {subtext && <div className="text-xs text-cyber-muted/70 mt-1">{subtext}</div>}
+    </motion.div>
+  );
+}
 
 export default function DashboardPage() {
-  const [health, setHealth] = useState<HealthStatus>({ status: 'checking' });
+  const { history, totalScans, totalBlocked } = useAppStore();
+  const [apiStatus, setApiStatus] = useState<{ url: boolean; qr: boolean; model: string }>({
+    url: false, qr: false, model: '—',
+  });
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    let mounted = true;
-    checkHealth().then((data) => {
-      if (mounted) setHealth(data);
-    });
-    return () => { mounted = false; };
+    const fetchStatus = async () => {
+      try {
+        const [health, qrHealth, modelInfo] = await Promise.allSettled([
+          getHealth(), getQRHealth(), getModelInfo(),
+        ]);
+        setApiStatus({
+          url: health.status === 'fulfilled' && health.value.model_loaded,
+          qr: qrHealth.status === 'fulfilled' && qrHealth.value.qr_engine_active,
+          model: modelInfo.status === 'fulfilled' ? modelInfo.value.model_type : 'Unknown',
+        });
+      } catch {
+        // silently fail
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchStatus();
   }, []);
 
-  const isOnline = health.status !== 'offline' && health.status !== 'checking';
+  const blockRate = totalScans > 0 ? Math.round((totalBlocked / totalScans) * 100) : 0;
 
   return (
-    <main className="app-container">
+    <main className="min-h-screen relative">
+      <div className="fixed inset-0 cyber-grid opacity-20 pointer-events-none" />
       <Navbar />
 
-      <section className="dash-hero">
-        <div className="dash-hero-content">
-          <div className="page-badge">Dashboard</div>
-          <h1>Threat <span className="gradient-text">Intelligence</span></h1>
-          <p className="dash-sub">
-            Monitor scan history, system health, and AI pipeline performance in real time.
-          </p>
-        </div>
-        <div className="blob b1"></div>
-        <div className="blob b2"></div>
-      </section>
+      <div className="relative z-10 container max-w-7xl py-8">
+        {/* Header */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="flex items-center justify-between mb-8"
+        >
+          <div>
+            <div className="text-xs font-mono text-cyber-blue uppercase tracking-widest mb-2">Security Command Center</div>
+            <h1 className="text-display text-3xl font-black text-white">Dashboard</h1>
+            <p className="text-sm text-cyber-muted mt-1">Real-time threat intelligence and scan analytics</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold"
+              style={{ background: 'rgba(16,185,129,0.1)', border: '1px solid rgba(16,185,129,0.2)', color: '#10b981' }}>
+              <span className="w-1.5 h-1.5 rounded-full bg-cyber-green animate-pulse" />
+              Systems Operational
+            </div>
+            <Link href="/scan">
+              <motion.button whileHover={{ scale: 1.05 }} className="cyber-btn cyber-btn-primary text-xs px-4 py-2.5">
+                <Zap className="w-3.5 h-3.5" />
+                New Scan
+              </motion.button>
+            </Link>
+          </div>
+        </motion.div>
 
-      {/* Status Cards */}
-      <section className="status-cards container">
-        <div className="scard glass">
-          <div className="scard-icon" style={{ background: 'rgba(67,233,123,.1)', color: '#43e97b' }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-          </div>
-          <div className="scard-info">
-            <span className="scard-label">System Status</span>
-            <span className={`scard-value ${isOnline ? 'online' : 'offline'}`}>
-              <span className={`status-dot ${isOnline ? 'online' : 'offline'}`}></span>
-              {health.status === 'checking' ? 'Checking...' : isOnline ? 'Online' : 'Offline'}
-            </span>
-          </div>
-        </div>
-
-        <div className="scard glass">
-          <div className="scard-icon" style={{ background: 'rgba(79,172,254,.1)', color: '#4facfe' }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M13 10V3L4 14h7v7l9-11h-7z" />
-            </svg>
-          </div>
-          <div className="scard-info">
-            <span className="scard-label">AI Pipeline</span>
-            <span className="scard-value">CascadeFlow Active</span>
-          </div>
+        {/* Metric cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+          <MetricCard label="Total Scans" value={totalScans.toString()} icon={Shield} color="#4facfe" trend="up" subtext="This session" />
+          <MetricCard label="Threats Blocked" value={totalBlocked.toString()} icon={AlertTriangle} color="#ef4444" trend="down" subtext="Active protection" />
+          <MetricCard label="Block Rate" value={`${blockRate}%`} icon={Lock} color="#a855f7" subtext="Session average" />
+          <MetricCard label="Avg Response" value="<240ms" icon={Zap} color="#10b981" trend="up" subtext="Sub-300ms target" />
         </div>
 
-        <div className="scard glass">
-          <div className="scard-icon" style={{ background: 'rgba(0,242,254,.1)', color: '#00f2fe' }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
-          </div>
-          <div className="scard-info">
-            <span className="scard-label">Memory Engine</span>
-            <span className="scard-value">Hindsight Active</span>
-          </div>
+        {/* System status + quick actions */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          {/* System status */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="glass-card p-5"
+          >
+            <div className="flex items-center gap-2 mb-5">
+              <Server className="w-4 h-4 text-cyber-blue" />
+              <span className="text-sm font-bold text-white">System Status</span>
+            </div>
+            <div className="space-y-3">
+              {[
+                { label: 'URL Detection API', active: apiStatus.url, loading },
+                { label: 'QR Security Engine', active: apiStatus.qr, loading },
+                { label: 'ML Model', active: true, loading, detail: apiStatus.model },
+                { label: 'Batch Predictor', active: true, loading },
+              ].map((s) => (
+                <div key={s.label} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span
+                      className="w-2 h-2 rounded-full"
+                      style={{
+                        backgroundColor: s.loading ? '#64748b' : s.active ? '#10b981' : '#ef4444',
+                        boxShadow: s.active && !s.loading ? '0 0 8px #10b981' : undefined,
+                      }}
+                    />
+                    <span className="text-xs text-cyber-text">{s.label}</span>
+                  </div>
+                  <span className="text-xs font-mono font-bold"
+                    style={{ color: s.loading ? '#64748b' : s.active ? '#10b981' : '#ef4444' }}>
+                    {s.loading ? '...' : s.detail || (s.active ? 'ONLINE' : 'OFFLINE')}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </motion.div>
+
+          {/* Quick scan */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-card p-5"
+          >
+            <div className="flex items-center gap-2 mb-5">
+              <Zap className="w-4 h-4 text-cyber-blue" />
+              <span className="text-sm font-bold text-white">Quick Actions</span>
+            </div>
+            <div className="space-y-3">
+              {[
+                { label: 'Scan URL', href: '/scan', icon: Globe, color: '#4facfe' },
+                { label: 'Scan QR Code', href: '/qr', icon: QrCode, color: '#a855f7' },
+                { label: 'Live Monitor', href: '/monitor', icon: Activity, color: '#10b981' },
+                { label: 'View Analytics', href: '/analytics', icon: TrendingUp, color: '#f97316' },
+              ].map((a) => {
+                const Icon = a.icon;
+                return (
+                  <Link key={a.href} href={a.href}>
+                    <motion.div
+                      whileHover={{ x: 4 }}
+                      className="flex items-center justify-between p-3 rounded-xl cursor-pointer transition-all hover:bg-white/3"
+                      style={{ border: '1px solid rgba(30,45,69,0.4)' }}
+                    >
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+                          style={{ background: `${a.color}15` }}>
+                          <Icon className="w-4 h-4" style={{ color: a.color }} />
+                        </div>
+                        <span className="text-sm font-semibold text-white">{a.label}</span>
+                      </div>
+                      <ArrowRight className="w-3.5 h-3.5 text-cyber-muted" />
+                    </motion.div>
+                  </Link>
+                );
+              })}
+            </div>
+          </motion.div>
+
+          {/* Risk meter overview */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="glass-card p-5 flex flex-col items-center justify-center"
+          >
+            <div className="text-xs font-mono text-cyber-muted uppercase tracking-widest mb-4">Session Block Rate</div>
+            <RiskMeter score={blockRate} size="lg" />
+            <div className="mt-4 text-center">
+              <div className="text-xs text-cyber-muted">
+                {totalBlocked} of {totalScans} scans blocked
+              </div>
+            </div>
+          </motion.div>
         </div>
 
-        <div className="scard glass">
-          <div className="scard-icon" style={{ background: 'rgba(168,85,247,.1)', color: '#a855f7' }}>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6m6 0h6m-6 0V9a2 2 0 012-2h2a2 2 0 012 2v10m6 0v-4a2 2 0 00-2-2h-2a2 2 0 00-2 2v4" />
-            </svg>
-          </div>
-          <div className="scard-info">
-            <span className="scard-label">Total Scans</span>
-            <span className="scard-value">12,402</span>
-          </div>
+        {/* Live threat feed + history */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* Live threats */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-card p-5"
+          >
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <Activity className="w-4 h-4 text-red-400" />
+                <span className="text-sm font-bold text-white">Live Threat Feed</span>
+              </div>
+              <span className="flex items-center gap-1.5 text-xs text-red-400 font-semibold">
+                <span className="w-1.5 h-1.5 rounded-full bg-red-400 animate-pulse" />
+                LIVE
+              </span>
+            </div>
+            <div className="space-y-2">
+              {MOCK_THREATS.map((t, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: i * 0.08 }}
+                  className="flex items-center gap-3 p-3 rounded-xl"
+                  style={{ background: `${THREAT_COLORS[t.type]}08`, border: `1px solid ${THREAT_COLORS[t.type]}20` }}
+                >
+                  <AlertTriangle className="w-3.5 h-3.5 flex-shrink-0" style={{ color: THREAT_COLORS[t.type] }} />
+                  <div className="flex-1 min-w-0">
+                    <div className="text-xs font-mono text-cyber-text truncate">{t.url}</div>
+                    <div className="text-xs text-cyber-muted mt-0.5">{t.time}</div>
+                  </div>
+                  <span className="text-xs font-black font-mono flex-shrink-0" style={{ color: THREAT_COLORS[t.type] }}>
+                    {t.risk}
+                  </span>
+                </motion.div>
+              ))}
+            </div>
+            <Link href="/monitor">
+              <motion.div whileHover={{ x: 2 }} className="flex items-center justify-center gap-2 mt-4 text-xs text-cyber-blue font-semibold cursor-pointer">
+                View Live Monitor <ArrowRight className="w-3.5 h-3.5" />
+              </motion.div>
+            </Link>
+          </motion.div>
+
+          {/* Recent scan history */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass-card p-5"
+          >
+            <div className="flex items-center justify-between mb-5">
+              <div className="flex items-center gap-2">
+                <Shield className="w-4 h-4 text-cyber-blue" />
+                <span className="text-sm font-bold text-white">Recent Scans</span>
+              </div>
+              <Link href="/history">
+                <span className="text-xs text-cyber-blue hover:text-cyber-cyan transition-colors cursor-pointer">View All</span>
+              </Link>
+            </div>
+            <HistoryTable items={history.slice(0, 5)} compact />
+          </motion.div>
         </div>
-      </section>
-
-      {/* Threat History */}
-      <section className="history-section container">
-        <div className="history-wrapper glass">
-          <ThreatHistory />
-        </div>
-      </section>
-
-      <footer className="footer">
-        <p>&copy; 2026 PhishGuard AI. All rights reserved.</p>
-      </footer>
-
-      <style jsx>{`
-        .app-container { min-height:100vh; background:#05060a; color:white; padding-bottom:3rem; }
-        .dash-hero { position:relative; padding:5rem 1rem 2rem; text-align:center; overflow:hidden; }
-        .dash-hero-content { position:relative; z-index:10; }
-        .page-badge { display:inline-block; padding:.3rem .8rem; background:rgba(79,172,254,.1); border:1px solid rgba(79,172,254,.2); border-radius:100px; color:#4facfe; font-size:.7rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; margin-bottom:1.5rem; }
-        h1 { font-size:clamp(2rem,6vw,3.5rem); font-weight:900; line-height:1.1; letter-spacing:-.03em; margin-bottom:1rem; }
-        .dash-sub { font-size:1rem; color:#94a3b8; max-width:500px; margin:0 auto; }
-        .blob { position:absolute; width:400px; height:400px; border-radius:50%; filter:blur(80px); z-index:1; pointer-events:none; }
-        .b1 { top:-80px; left:-80px; background:radial-gradient(circle,rgba(79,172,254,.12) 0%,transparent 70%); }
-        .b2 { bottom:-80px; right:-80px; background:radial-gradient(circle,rgba(0,242,254,.1) 0%,transparent 70%); }
-
-        .status-cards { display:grid; grid-template-columns:repeat(2,1fr); gap:1rem; margin-top:2rem; }
-        @media(min-width:768px) { .status-cards { grid-template-columns:repeat(4,1fr); } }
-        .scard { padding:1.5rem; border-radius:20px; display:flex; align-items:center; gap:1rem; transition:transform .2s,border-color .2s; }
-        .scard:hover { transform:translateY(-2px); border-color:rgba(255,255,255,.2); }
-        .scard-icon { width:44px; height:44px; border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
-        .scard-icon svg { width:22px; height:22px; }
-        .scard-info { display:flex; flex-direction:column; gap:.2rem; min-width:0; }
-        .scard-label { font-size:.65rem; font-weight:800; text-transform:uppercase; letter-spacing:.1em; color:#64748b; }
-        .scard-value { font-size:.9rem; font-weight:700; display:flex; align-items:center; gap:.4rem; }
-        .status-dot { width:8px; height:8px; border-radius:50%; flex-shrink:0; }
-        .status-dot.online { background:#43e97b; box-shadow:0 0 10px #43e97b; animation:pulse 2s ease-in-out infinite; }
-        .status-dot.offline { background:#ff4e50; box-shadow:0 0 10px #ff4e50; }
-        .scard-value.online { color:#43e97b; }
-        .scard-value.offline { color:#ff4e50; }
-
-        .history-section { margin-top:2.5rem; }
-        .history-wrapper { padding:2rem; border-radius:24px; }
-
-        .footer { margin-top:5rem; text-align:center; color:#475569; font-size:.875rem; }
-        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.5} }
-      `}</style>
+      </div>
     </main>
   );
 }
