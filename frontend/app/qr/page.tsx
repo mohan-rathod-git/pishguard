@@ -106,8 +106,9 @@ export default function QRScanPage() {
       const urlResult = await predictUrl(manualUrl.trim());
 
       // Convert to QR response format
+      const isSafe = urlResult.prediction === 'SAFE';
       const qrResult: QRScanResponse = {
-        status: urlResult.prediction !== 'SAFE' ? 'BLOCKED' : 'ALLOWED',
+        status: isSafe ? 'ALLOWED' : 'BLOCKED',
         prediction: urlResult.prediction,
         confidence: urlResult.confidence,
         risk_score: urlResult.risk_score,
@@ -118,7 +119,9 @@ export default function QRScanPage() {
         reasons: urlResult.reasons,
         fake_payment_detected: false,
         processing_time_ms: urlResult.processing_time_ms || 0,
-        is_shortened_url: manualUrl.includes('bit.ly') || manualUrl.includes('tinyurl') || manualUrl.includes('t.co'),
+        is_shortened_url: ['bit.ly', 'tinyurl', 't.co', 'goo.gl', 'rb.gy', 't.ly'].some(
+          (s) => manualUrl.includes(s)
+        ),
       };
 
       setResult(qrResult);

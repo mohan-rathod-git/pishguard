@@ -61,11 +61,23 @@ class QRScanResponse(BaseModel):
     decoded_payload: Optional[str] = Field(
         None, description="Decoded QR code payload text"
     )
+    payload_type: Optional[str] = Field(
+        None, description="Classified payload type: URL, TEXT, EMAIL, UPI_PAYMENT, etc."
+    )
     final_url: Optional[str] = Field(
         None, description="Final destination URL after redirect expansion"
     )
+    redirect_chain: List[str] = Field(
+        default=[], description="Ordered list of URLs in the redirect chain"
+    )
     reasons: List[str] = Field(
         ..., description="Human-readable explanations for the verdict"
+    )
+    fake_payment_detected: bool = Field(
+        default=False, description="Whether a fake payment QR was detected"
+    )
+    is_shortened_url: bool = Field(
+        default=False, description="Whether the QR payload contains a shortened URL"
     )
     qr_count: int = Field(
         default=0, description="Number of QR codes detected in the image"

@@ -113,8 +113,12 @@ class QRRiskEngine:
                 "confidence": 0.0,
                 "severity": "NONE",
                 "decoded_payload": None,
+                "payload_type": None,
                 "final_url": None,
+                "redirect_chain": [],
                 "reasons": ["No QR code detected in the uploaded image"],
+                "fake_payment_detected": False,
+                "is_shortened_url": False,
                 "qr_count": 0,
                 "all_results": [],
             }
@@ -146,6 +150,15 @@ class QRRiskEngine:
         # Use the worst (highest risk) result as the primary response
         primary = worst_result or all_results[0]
 
+        # Derive convenience flags
+        fake_payment_detected = primary.get("prediction") == "FAKE_PAYMENT"
+        redirect_chain = primary.get("redirect_chain") or []
+        payload = primary.get("decoded_payload", "") or ""
+        is_shortened_url = any(
+            s in payload.lower()
+            for s in ["bit.ly", "tinyurl", "t.co", "goo.gl", "rb.gy", "t.ly", "cutt.ly"]
+        )
+
         return {
             "scan_id": scan_id,
             "status": primary["status"],
@@ -154,8 +167,12 @@ class QRRiskEngine:
             "confidence": primary["confidence"],
             "severity": primary["severity"],
             "decoded_payload": primary["decoded_payload"],
+            "payload_type": primary.get("payload_type"),
             "final_url": primary.get("final_url"),
+            "redirect_chain": redirect_chain,
             "reasons": primary["reasons"],
+            "fake_payment_detected": fake_payment_detected,
+            "is_shortened_url": is_shortened_url,
             "qr_count": len(decoded_results),
             "all_results": all_results if len(decoded_results) > 1 else [],
         }
@@ -352,8 +369,12 @@ class QRRiskEngine:
             "confidence": 0.0,
             "severity": "NONE",
             "decoded_payload": None,
+            "payload_type": None,
             "final_url": None,
+            "redirect_chain": [],
             "reasons": [f"Scan error: {error}"],
+            "fake_payment_detected": False,
+            "is_shortened_url": False,
             "qr_count": 0,
             "all_results": [],
         }

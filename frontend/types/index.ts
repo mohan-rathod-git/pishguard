@@ -1,6 +1,15 @@
 // ── URL Prediction Types ──────────────────────────────────
 
+// URL model labels
 export type ThreatLevel = 'SAFE' | 'PHISHING' | 'MALWARE' | 'SPAM' | 'SCAM' | 'ERROR';
+
+// QR engine can return additional classifications
+export type QRThreatLevel =
+  | ThreatLevel
+  | 'FAKE_PAYMENT'
+  | 'SUSPICIOUS'
+  | 'CRITICAL'
+  | 'UNKNOWN';
 
 export interface PredictionResponse {
   url: string;
@@ -18,22 +27,44 @@ export interface BatchPredictionResponse {
 
 // ── QR Scan Types ─────────────────────────────────────────
 
-export type QRStatus = 'BLOCKED' | 'ALLOWED' | 'NO_QR_FOUND' | 'DECODE_FAILED' | 'SCAN_FAILED';
-export type QRPayloadType = 'URL' | 'TEXT' | 'EMAIL' | 'PHONE' | 'WIFI' | 'VCARD' | 'PAYMENT' | 'GEO' | 'UNKNOWN';
+export type QRStatus =
+  | 'BLOCKED'
+  | 'ALLOWED'
+  | 'NO_QR_FOUND'
+  | 'ERROR'
+  | 'DECODE_FAILED'
+  | 'SCAN_FAILED';
+
+export type QRPayloadType =
+  | 'URL'
+  | 'TEXT'
+  | 'EMAIL'
+  | 'PHONE'
+  | 'WIFI'
+  | 'VCARD'
+  | 'PAYMENT'
+  | 'UPI_PAYMENT'
+  | 'GEO'
+  | 'GEO_LOCATION'
+  | 'UNKNOWN';
 
 export interface QRScanResponse {
+  scan_id?: string;
   status: QRStatus;
-  prediction: ThreatLevel | null;
+  prediction: QRThreatLevel | null;
   confidence: number;
   risk_score: number;
+  severity?: string;
   decoded_payload: string | null;
   payload_type: QRPayloadType | null;
   redirect_chain: string[];
   final_url: string | null;
   reasons: string[];
   fake_payment_detected: boolean;
-  processing_time_ms: number;
   is_shortened_url: boolean;
+  processing_time_ms: number;
+  qr_count?: number;
+  all_results?: Record<string, unknown>[];
 }
 
 export interface QRHealthResponse {

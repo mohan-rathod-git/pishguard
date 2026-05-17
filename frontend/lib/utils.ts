@@ -1,4 +1,4 @@
-import { ThreatLevel } from '@/types';
+// Threat & risk utilities
 
 export function getRiskColor(score: number): string {
   if (score >= 75) return '#ef4444';
@@ -14,23 +14,29 @@ export function getRiskLabel(score: number): string {
   return 'SAFE';
 }
 
-export function getThreatColor(level: ThreatLevel | null | string): string {
+export function getThreatColor(level: string | null | undefined): string {
   switch (level) {
     case 'PHISHING': return '#ef4444';
     case 'MALWARE': return '#dc2626';
     case 'SCAM': return '#f97316';
     case 'SPAM': return '#eab308';
+    case 'FAKE_PAYMENT': return '#f97316';
+    case 'SUSPICIOUS': return '#eab308';
+    case 'CRITICAL': return '#dc2626';
     case 'SAFE': return '#10b981';
     default: return '#64748b';
   }
 }
 
-export function getThreatBg(level: ThreatLevel | null | string): string {
+export function getThreatBg(level: string | null | undefined): string {
   switch (level) {
     case 'PHISHING': return 'rgba(239,68,68,0.15)';
     case 'MALWARE': return 'rgba(220,38,38,0.15)';
     case 'SCAM': return 'rgba(249,115,22,0.15)';
     case 'SPAM': return 'rgba(234,179,8,0.15)';
+    case 'FAKE_PAYMENT': return 'rgba(249,115,22,0.15)';
+    case 'SUSPICIOUS': return 'rgba(234,179,8,0.15)';
+    case 'CRITICAL': return 'rgba(220,38,38,0.15)';
     case 'SAFE': return 'rgba(16,185,129,0.15)';
     default: return 'rgba(100,116,139,0.15)';
   }
