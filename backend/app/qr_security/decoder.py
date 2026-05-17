@@ -12,9 +12,19 @@ from typing import List, Optional, Dict, Any
 import cv2
 import numpy as np
 from PIL import Image
-from pyzbar.pyzbar import decode as pyzbar_decode, ZBarSymbol
 
 from app.utils.logger import logger
+
+# Try importing pyzbar, with fallback to OpenCV native detector if DLLs are missing
+try:
+    from pyzbar.pyzbar import decode as pyzbar_decode, ZBarSymbol
+    PYZBAR_AVAILABLE = True
+except Exception as e:
+    logger.warning(f"Could not load pyzbar (missing libiconv or DLLs). Falling back to OpenCV native QR decoder only. Error: {e}")
+    pyzbar_decode = None
+    ZBarSymbol = None
+    PYZBAR_AVAILABLE = False
+
 
 
 # ── Constants ──
@@ -159,6 +169,8 @@ class QRDecoder:
         image_versions = self.preprocess_image(img)
 
         for version in image_versions:
+            if not PYZBAR_AVAILABLE:
+                break
             try:
                 decoded_list = pyzbar_decode(version, symbols=[ZBarSymbol.QRCODE])
                 for obj in decoded_list:
