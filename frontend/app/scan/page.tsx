@@ -6,8 +6,10 @@ import Navbar from '@/components/Navbar';
 import RiskMeter from '@/components/RiskMeter';
 import ThreatResultCard from '@/components/ThreatResultCard';
 import { predictUrl } from '@/lib/api';
-import { PredictionResponse } from '@/types';
+import { PredictionResponse, AIExplanationState } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
+import { explainThreat } from '@/services/aiExplainer';
+import AIExplanationCard from '@/components/AIExplanationCard';
 import toast from 'react-hot-toast';
 import {
   Globe, Zap, Shield, Search, X,
@@ -26,6 +28,7 @@ export default function ScanPage() {
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState<PredictionResponse | null>(null);
   const [error, setError] = useState('');
+  const [aiState, setAiState] = useState<AIExplanationState>({ status: 'idle', explanation: null, error: null });
   const inputRef = useRef<HTMLInputElement>(null);
   const { addHistory, incrementScans, incrementBlocked } = useAppStore();
 
@@ -36,6 +39,7 @@ export default function ScanPage() {
     setScanning(true);
     setError('');
     setResult(null);
+    setAiState({ status: 'idle', explanation: null, error: null });
 
     try {
       const data = await predictUrl(scanUrl);
@@ -57,6 +61,21 @@ export default function ScanPage() {
         toast.success('URL appears safe!');
       } else {
         toast.error(`Threat detected: ${data.prediction}`);
+        
+        // Trigger AI Explanation for threats
+        setAiState({ status: 'loading', explanation: null, error: null });
+        explainThreat({
+          url: scanUrl,
+          risk_score: data.risk_score,
+          prediction: data.prediction,
+          reasons: data.reasons || [],
+        })
+          .then((res) => {
+            setAiState({ status: 'done', explanation: res.explanation, error: null });
+          })
+          .catch((err) => {
+            setAiState({ status: 'error', explanation: null, error: err.message || 'Failed to generate explanation' });
+          });
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Scan failed';
@@ -71,6 +90,7 @@ export default function ScanPage() {
     setResult(null);
     setError('');
     setUrl('');
+    setAiState({ status: 'idle', explanation: null, error: null });
     inputRef.current?.focus();
   };
 
@@ -263,8 +283,29 @@ export default function ScanPage() {
               </div>
 
               {/* Threat Result */}
-              <div className="md:col-span-2">
+              <div className="md:col-span-2 space-y-6">
                 <ThreatResultCard result={result} type="url" />
+                
+                {/* AI Explanation Card */}
+                {result.prediction !== 'SAFE' && (
+                  <AIExplanationCard 
+                    explanation={aiState.explanation}
+                    isLoading={aiState.status === 'loading'}
+                    error={aiState.error}
+                    prediction={result.prediction}
+                    onRetry={() => {
+                      setAiState({ status: 'loading', explanation: null, error: null });
+                      explainThreat({
+                        url: result.url,
+                        risk_score: result.risk_score,
+                        prediction: result.prediction,
+                        reasons: result.reasons || [],
+                      })
+                        .then((res) => setAiState({ status: 'done', explanation: res.explanation, error: null }))
+                        .catch((err) => setAiState({ status: 'error', explanation: null, error: err.message || 'Failed to generate explanation' }));
+                    }}
+                  />
+                )}
               </div>
             </div>
 

@@ -6,8 +6,10 @@ import Navbar from '@/components/Navbar';
 import RiskMeter from '@/components/RiskMeter';
 import ThreatResultCard from '@/components/ThreatResultCard';
 import { scanQRFile, scanQRBase64 } from '@/lib/api';
-import { QRScanResponse } from '@/types';
+import { QRScanResponse, AIExplanationState } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
+import { explainThreat } from '@/services/aiExplainer';
+import AIExplanationCard from '@/components/AIExplanationCard';
 import toast from 'react-hot-toast';
 import {
   QrCode, Upload, Shield, AlertTriangle,
@@ -28,6 +30,7 @@ export default function QRScanPage() {
   const [isDragging, setIsDragging] = useState(false);
   const [activeTab, setActiveTab] = useState<'upload' | 'url'>('upload');
   const [manualUrl, setManualUrl] = useState('');
+  const [aiState, setAiState] = useState<AIExplanationState>({ status: 'idle', explanation: null, error: null });
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addHistory, incrementScans, incrementBlocked } = useAppStore();
 
@@ -49,6 +52,7 @@ export default function QRScanPage() {
     setScanState('scanning');
     setError('');
     setResult(null);
+    setAiState({ status: 'idle', explanation: null, error: null });
 
     try {
       const data = await scanQRFile(file);
@@ -67,6 +71,18 @@ export default function QRScanPage() {
 
       if (data.status === 'BLOCKED') {
         toast.error(`QR BLOCKED: ${data.prediction}`);
+        
+        // Trigger AI Explanation for threats
+        setAiState({ status: 'loading', explanation: null, error: null });
+        explainThreat({
+          url: data.decoded_payload || 'QR Image',
+          risk_score: data.risk_score,
+          prediction: data.prediction || 'UNKNOWN',
+          reasons: data.reasons || [],
+        })
+          .then((res) => setAiState({ status: 'done', explanation: res.explanation, error: null }))
+          .catch((err) => setAiState({ status: 'error', explanation: null, error: err.message || 'Failed to generate explanation' }));
+          
       } else if (data.status === 'ALLOWED') {
         toast.success('QR code appears safe!');
       } else if (data.status === 'NO_QR_FOUND') {
@@ -99,6 +115,7 @@ export default function QRScanPage() {
     setError('');
     setResult(null);
     setPreview(null);
+    setAiState({ status: 'idle', explanation: null, error: null });
 
     try {
       // Use the predict endpoint for direct URLs from QR
@@ -138,6 +155,18 @@ export default function QRScanPage() {
 
       if (qrResult.status === 'BLOCKED') {
         toast.error(`URL BLOCKED: ${urlResult.prediction}`);
+        
+        // Trigger AI Explanation for threats
+        setAiState({ status: 'loading', explanation: null, error: null });
+        explainThreat({
+          url: manualUrl.trim(),
+          risk_score: urlResult.risk_score,
+          prediction: urlResult.prediction,
+          reasons: urlResult.reasons || [],
+        })
+          .then((res) => setAiState({ status: 'done', explanation: res.explanation, error: null }))
+          .catch((err) => setAiState({ status: 'error', explanation: null, error: err.message || 'Failed to generate explanation' }));
+
       } else {
         toast.success('URL appears safe!');
       }
@@ -155,6 +184,7 @@ export default function QRScanPage() {
     setError('');
     setPreview(null);
     setManualUrl('');
+    setAiState({ status: 'idle', explanation: null, error: null });
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -482,8 +512,29 @@ export default function QRScanPage() {
                 </div>
 
                 {/* Threat details */}
-                <div className="md:col-span-2">
+                <div className="md:col-span-2 space-y-6">
                   <ThreatResultCard result={result} type="qr" />
+                  
+                  {/* AI Explanation Card */}
+                  {result.status === 'BLOCKED' && (
+                    <AIExplanationCard 
+                      explanation={aiState.explanation}
+                      isLoading={aiState.status === 'loading'}
+                      error={aiState.error}
+                      prediction={result.prediction || 'UNKNOWN'}
+                      onRetry={() => {
+                        setAiState({ status: 'loading', explanation: null, error: null });
+                        explainThreat({
+                          url: result.decoded_payload || 'QR Image',
+                          risk_score: result.risk_score,
+                          prediction: result.prediction || 'UNKNOWN',
+                          reasons: result.reasons || [],
+                        })
+                          .then((res) => setAiState({ status: 'done', explanation: res.explanation, error: null }))
+                          .catch((err) => setAiState({ status: 'error', explanation: null, error: err.message || 'Failed to generate explanation' }));
+                      }}
+                    />
+                  )}
                 </div>
               </div>
 

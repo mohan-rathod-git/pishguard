@@ -137,3 +137,13 @@ export interface ChartDataPoint {
   blocked?: number;
   safe?: number;
 }
+
+// ── AI Explanation ────────────────────────────────────────
+
+export type AIExplainStatus = 'idle' | 'loading' | 'done' | 'error';
+
+export interface AIExplanationState {
+  status: AIExplainStatus;
+  explanation: string | null;
+  error: string | null;
+}
