@@ -30,3 +30,18 @@ yarn-error.log*
 
 # typescript
 /frontend/next-env.d.ts
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+
+# Logs
+*.log
+backend/logs/
+
+# TypeScript build info
+*.tsbuildinfo
+

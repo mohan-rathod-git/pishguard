@@ -102,7 +102,7 @@ export interface ScanHistoryItem {
   id: string;
   type: 'url' | 'qr';
   input: string;
-  prediction: ThreatLevel | null;
+  prediction: ThreatLevel | QRThreatLevel | null;
   risk_score: number;
   timestamp: Date;
   status: QRStatus | 'SCANNED';

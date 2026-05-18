@@ -1,6 +1,11 @@
 'use client';
 import React from 'react';
-import { Anomaly } from '../services/api';
+
+interface Anomaly {
+  title: string;
+  description: string;
+  impact: 'Critical' | 'High' | 'Medium' | 'Low';
+}
 
 interface ThreatCardProps {
   anomalies?: Anomaly[];

@@ -8,7 +8,7 @@ import ThreatResultCard from '@/components/ThreatResultCard';
 import { predictUrl } from '@/lib/api';
 import { PredictionResponse, AIExplanationState } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
-import { explainThreat } from '@/services/aiExplainer';
+import { explainThreat, AIExplainPayload } from '@/services/aiExplainer';
 import AIExplanationCard from '@/components/AIExplanationCard';
 import toast from 'react-hot-toast';
 import {
@@ -29,6 +29,7 @@ export default function ScanPage() {
   const [result, setResult] = useState<PredictionResponse | null>(null);
   const [error, setError] = useState('');
   const [aiState, setAiState] = useState<AIExplanationState>({ status: 'idle', explanation: null, error: null });
+  const [chatContext, setChatContext] = useState<AIExplainPayload | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const { addHistory, incrementScans, incrementBlocked } = useAppStore();
 
@@ -40,6 +41,7 @@ export default function ScanPage() {
     setError('');
     setResult(null);
     setAiState({ status: 'idle', explanation: null, error: null });
+    setChatContext(null);
 
     try {
       const data = await predictUrl(scanUrl);
@@ -61,21 +63,17 @@ export default function ScanPage() {
         toast.success('URL appears safe!');
       } else {
         toast.error(`Threat detected: ${data.prediction}`);
-        
-        // Trigger AI Explanation for threats
-        setAiState({ status: 'loading', explanation: null, error: null });
-        explainThreat({
+        const ctx: AIExplainPayload = {
           url: scanUrl,
           risk_score: data.risk_score,
           prediction: data.prediction,
           reasons: data.reasons || [],
-        })
-          .then((res) => {
-            setAiState({ status: 'done', explanation: res.explanation, error: null });
-          })
-          .catch((err) => {
-            setAiState({ status: 'error', explanation: null, error: err.message || 'Failed to generate explanation' });
-          });
+        };
+        setChatContext(ctx);
+        setAiState({ status: 'loading', explanation: null, error: null });
+        explainThreat(ctx)
+          .then((res) => setAiState({ status: 'done', explanation: res.explanation, error: null }))
+          .catch((err) => setAiState({ status: 'error', explanation: null, error: err.message || 'Failed to generate explanation' }));
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Scan failed';
@@ -91,6 +89,7 @@ export default function ScanPage() {
     setError('');
     setUrl('');
     setAiState({ status: 'idle', explanation: null, error: null });
+    setChatContext(null);
     inputRef.current?.focus();
   };
 
@@ -288,21 +287,18 @@ export default function ScanPage() {
                 
                 {/* AI Explanation Card */}
                 {result.prediction !== 'SAFE' && (
-                  <AIExplanationCard 
+                  <AIExplanationCard
                     explanation={aiState.explanation}
                     isLoading={aiState.status === 'loading'}
                     error={aiState.error}
                     prediction={result.prediction}
+                    chatContext={chatContext ?? undefined}
                     onRetry={() => {
+                      if (!chatContext) return;
                       setAiState({ status: 'loading', explanation: null, error: null });
-                      explainThreat({
-                        url: result.url,
-                        risk_score: result.risk_score,
-                        prediction: result.prediction,
-                        reasons: result.reasons || [],
-                      })
+                      explainThreat(chatContext)
                         .then((res) => setAiState({ status: 'done', explanation: res.explanation, error: null }))
-                        .catch((err) => setAiState({ status: 'error', explanation: null, error: err.message || 'Failed to generate explanation' }));
+                        .catch((err) => setAiState({ status: 'error', explanation: null, error: err.message || 'Failed' }));
                     }}
                   />
                 )}

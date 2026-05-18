@@ -137,21 +137,30 @@ class QRSecurityUtils:
         """
         Check image bytes for embedded malicious content.
         Detects polyglot files, embedded scripts, and injection attempts.
+
+        NOTE: We only scan for actual script/code injection patterns.
+        Binary sequences like b"MZ" (PE header) are NOT checked here because:
+        - PNG IDAT chunks naturally contain arbitrary byte sequences including MZ.
+        - The magic-bytes check already verified this is a valid image format.
+        - A real polyglot attack would embed <script> or <?php, not raw PE headers.
         """
-        # Check first 8KB for embedded scripts/HTML
+        # Only scan the first 8 KB for embedded text-based scripts/HTML
         header = data[:8192]
 
-        # PHP/script injection in image
+        # Skip first 512 bytes (image headers, EXIF, ICC profiles contain
+        # arbitrary binary data that could match short patterns).
+        scan_area = header[512:]
+
+        # Dangerous text-based injection patterns (must appear as plain text)
         dangerous_patterns = [
-            b"<?php",
-            b"<script",
-            b"<%@ ",
-            b"#!/",
-            b"MZ",  # Windows PE executable header (after magic bytes area)
+            b"<?php",       # PHP code injection
+            b"<script",     # JavaScript injection
+            b"<%@ ",        # ASP/JSP directive
+            b"#!/",         # Shell script shebang
         ]
 
         for pattern in dangerous_patterns:
-            if pattern in header[16:]:  # Skip magic bytes area
+            if pattern in scan_area:
                 logger.warning(
                     f"Malicious content detected in image: {pattern}"
                 )
@@ -159,19 +168,6 @@ class QRSecurityUtils:
                     "Image contains embedded malicious content "
                     "(possible polyglot file)"
                 )
-
-        # Check for excessive non-image data (steganography indicator)
-        if len(data) > 100_000:
-            # Rough heuristic: too much ASCII text in a large image
-            ascii_count = sum(
-                1 for b in data[1000:5000] if 32 <= b <= 126
-            )
-            ascii_ratio = ascii_count / 4000
-            if ascii_ratio > 0.8:
-                logger.warning(
-                    f"Suspicious image: high ASCII ratio ({ascii_ratio:.1%})"
-                )
-                # Don't block, just warn — could be a valid format
 
         return True, None
 

@@ -5,18 +5,17 @@ import { useState, useCallback, useRef } from 'react';
 import Navbar from '@/components/Navbar';
 import RiskMeter from '@/components/RiskMeter';
 import ThreatResultCard from '@/components/ThreatResultCard';
-import { scanQRFile, scanQRBase64 } from '@/lib/api';
+import { scanQRFile } from '@/lib/api';
 import { QRScanResponse, AIExplanationState } from '@/types';
 import { useAppStore } from '@/store/useAppStore';
-import { explainThreat } from '@/services/aiExplainer';
+import { explainThreat, AIExplainPayload } from '@/services/aiExplainer';
 import AIExplanationCard from '@/components/AIExplanationCard';
 import toast from 'react-hot-toast';
 import {
   QrCode, Upload, Shield, AlertTriangle,
-  CheckCircle, Search, X, Image as ImageIcon,
-  Link as LinkIcon, Scan, Info
+  CheckCircle, X, ImageOff,
+  Link as LinkIcon, Scan, Info, ExternalLink
 } from 'lucide-react';
-import { fileToBase64 } from '@/lib/utils';
 
 const ACCEPTED_TYPES = ['image/png', 'image/jpeg', 'image/jpg', 'image/bmp', 'image/webp'];
 
@@ -31,6 +30,7 @@ export default function QRScanPage() {
   const [activeTab, setActiveTab] = useState<'upload' | 'url'>('upload');
   const [manualUrl, setManualUrl] = useState('');
   const [aiState, setAiState] = useState<AIExplanationState>({ status: 'idle', explanation: null, error: null });
+  const [chatContext, setChatContext] = useState<AIExplainPayload | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { addHistory, incrementScans, incrementBlocked } = useAppStore();
 
@@ -53,6 +53,7 @@ export default function QRScanPage() {
     setError('');
     setResult(null);
     setAiState({ status: 'idle', explanation: null, error: null });
+    setChatContext(null);
 
     try {
       const data = await scanQRFile(file);
@@ -71,22 +72,21 @@ export default function QRScanPage() {
 
       if (data.status === 'BLOCKED') {
         toast.error(`QR BLOCKED: ${data.prediction}`);
-        
-        // Trigger AI Explanation for threats
-        setAiState({ status: 'loading', explanation: null, error: null });
-        explainThreat({
-          url: data.decoded_payload || 'QR Image',
+        const ctx: AIExplainPayload = {
+          url: data.decoded_payload || data.final_url || 'QR Image',
           risk_score: data.risk_score,
           prediction: data.prediction || 'UNKNOWN',
           reasons: data.reasons || [],
-        })
+        };
+        setChatContext(ctx);
+        setAiState({ status: 'loading', explanation: null, error: null });
+        explainThreat(ctx)
           .then((res) => setAiState({ status: 'done', explanation: res.explanation, error: null }))
           .catch((err) => setAiState({ status: 'error', explanation: null, error: err.message || 'Failed to generate explanation' }));
-          
       } else if (data.status === 'ALLOWED') {
-        toast.success('QR code appears safe!');
+        toast.success('QR code is safe!');
       } else if (data.status === 'NO_QR_FOUND') {
-        toast('No QR code found in image', { icon: '🔍' });
+        // No toast needed — UI shows prominent message
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'QR scan failed';
@@ -116,6 +116,7 @@ export default function QRScanPage() {
     setResult(null);
     setPreview(null);
     setAiState({ status: 'idle', explanation: null, error: null });
+    setChatContext(null);
 
     try {
       // Use the predict endpoint for direct URLs from QR
@@ -155,20 +156,19 @@ export default function QRScanPage() {
 
       if (qrResult.status === 'BLOCKED') {
         toast.error(`URL BLOCKED: ${urlResult.prediction}`);
-        
-        // Trigger AI Explanation for threats
-        setAiState({ status: 'loading', explanation: null, error: null });
-        explainThreat({
+        const ctx: AIExplainPayload = {
           url: manualUrl.trim(),
           risk_score: urlResult.risk_score,
           prediction: urlResult.prediction,
           reasons: urlResult.reasons || [],
-        })
+        };
+        setChatContext(ctx);
+        setAiState({ status: 'loading', explanation: null, error: null });
+        explainThreat(ctx)
           .then((res) => setAiState({ status: 'done', explanation: res.explanation, error: null }))
           .catch((err) => setAiState({ status: 'error', explanation: null, error: err.message || 'Failed to generate explanation' }));
-
       } else {
-        toast.success('URL appears safe!');
+        toast.success('URL is safe!');
       }
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Scan failed';
@@ -185,6 +185,7 @@ export default function QRScanPage() {
     setPreview(null);
     setManualUrl('');
     setAiState({ status: 'idle', explanation: null, error: null });
+    setChatContext(null);
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
 
@@ -452,101 +453,174 @@ export default function QRScanPage() {
               animate={{ opacity: 1, y: 0 }}
               className="space-y-6"
             >
-              {/* Status banner */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className={`flex items-center gap-4 p-5 rounded-2xl ${
-                  result.status === 'BLOCKED'
-                    ? 'border-glow-danger'
-                    : result.status === 'ALLOWED'
-                    ? 'border-glow-safe'
-                    : 'glass-card'
-                }`}
-                style={{
-                  background: result.status === 'BLOCKED'
-                    ? 'rgba(239,68,68,0.08)'
-                    : result.status === 'ALLOWED'
-                    ? 'rgba(16,185,129,0.08)'
-                    : 'rgba(13,18,32,0.7)',
-                }}
-              >
-                {result.status === 'BLOCKED' ? (
-                  <AlertTriangle className="w-8 h-8 text-red-400 flex-shrink-0" />
-                ) : result.status === 'ALLOWED' ? (
-                  <CheckCircle className="w-8 h-8 text-emerald-400 flex-shrink-0" />
-                ) : (
-                  <Shield className="w-8 h-8 text-cyber-muted flex-shrink-0" />
-                )}
-                <div>
-                  <div className="text-lg font-black" style={{
-                    color: result.status === 'BLOCKED' ? '#ef4444' : result.status === 'ALLOWED' ? '#10b981' : '#64748b'
-                  }}>
-                    {result.status === 'BLOCKED' ? '⛔ QR CODE BLOCKED'
-                      : result.status === 'ALLOWED' ? '✅ QR CODE SAFE'
-                      : result.status === 'NO_QR_FOUND' ? '🔍 No QR Code Found'
-                      : result.status}
-                  </div>
-                  <div className="text-xs text-cyber-muted mt-0.5">
-                    {result.payload_type && `Payload type: ${result.payload_type} · `}
-                    {result.is_shortened_url && 'Shortened URL detected · '}
-                    Risk score: {result.risk_score}/100
-                  </div>
-                </div>
-              </motion.div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Risk meter + preview */}
-                <div className="space-y-4">
-                  <div className="glass-card p-6 flex flex-col items-center justify-center">
-                    <div className="text-xs font-mono text-cyber-muted uppercase tracking-widest mb-4">Risk Score</div>
-                    <RiskMeter score={result.risk_score} size="lg" />
-                  </div>
-                  {preview && (
-                    <div className="glass-card p-4">
-                      <div className="text-xs font-mono text-cyber-muted uppercase tracking-widest mb-3">QR Image</div>
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={preview} alt="QR" className="w-full rounded-xl object-contain max-h-32" />
+              {/* ── NOT A QR CODE ── */}
+              {result.status === 'NO_QR_FOUND' ? (
+                <>
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="glass-card p-8 text-center"
+                    style={{ borderColor: 'rgba(100,116,139,0.4)', background: 'rgba(13,18,32,0.85)' }}
+                  >
+                    <div className="w-20 h-20 rounded-3xl mx-auto mb-5 flex items-center justify-center" style={{ background: 'rgba(100,116,139,0.12)', border: '1px solid rgba(100,116,139,0.25)' }}>
+                      <ImageOff className="w-10 h-10 text-slate-400" />
                     </div>
-                  )}
-                </div>
+                    <h3 className="text-xl font-black text-white mb-2">This is not a QR code image</h3>
+                    <p className="text-sm text-cyber-muted max-w-sm mx-auto mb-6 leading-relaxed">
+                      No QR code pattern was detected in the uploaded image. Please upload an actual QR code image (PNG, JPEG, BMP, or WEBP) that contains a scannable QR code.
+                    </p>
+                    <div className="flex flex-wrap items-center justify-center gap-3 text-xs text-cyber-muted mb-6">
+                      {['✓ Screenshot of a QR code', '✓ Photo of a printed QR', '✓ QR from a website'].map((h) => (
+                        <span key={h} className="px-3 py-1.5 rounded-lg" style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)' }}>{h}</span>
+                      ))}
+                    </div>
+                    {preview && (
+                      <div className="flex justify-center mb-4">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={preview} alt="Uploaded" className="w-28 h-28 object-contain rounded-2xl opacity-40" style={{ border: '1px solid rgba(100,116,139,0.3)' }} />
+                      </div>
+                    )}
+                    <motion.button
+                      whileHover={{ scale: 1.02 }}
+                      onClick={reset}
+                      className="cyber-btn cyber-btn-secondary px-6 py-2.5 rounded-xl text-sm"
+                    >
+                      <QrCode className="w-4 h-4" />
+                      Try Another Image
+                    </motion.button>
+                  </motion.div>
+                </>
+              ) : (
+                <>
+                  {/* ── STATUS BANNER ── */}
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className={`flex items-center gap-4 p-5 rounded-2xl ${
+                      result.status === 'BLOCKED' ? 'border-glow-danger' : 'border-glow-safe'
+                    }`}
+                    style={{
+                      background: result.status === 'BLOCKED'
+                        ? 'rgba(239,68,68,0.08)'
+                        : 'rgba(16,185,129,0.08)',
+                    }}
+                  >
+                    {result.status === 'BLOCKED' ? (
+                      <AlertTriangle className="w-8 h-8 text-red-400 flex-shrink-0" />
+                    ) : (
+                      <CheckCircle className="w-8 h-8 text-emerald-400 flex-shrink-0" />
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="text-lg font-black" style={{ color: result.status === 'BLOCKED' ? '#ef4444' : '#10b981' }}>
+                        {result.status === 'BLOCKED' ? '⛔ QR CODE BLOCKED — THREAT DETECTED' : '✅ QR CODE SAFE'}
+                      </div>
+                      <div className="text-xs text-cyber-muted mt-0.5 flex flex-wrap gap-2">
+                        {result.payload_type && <span>Payload: <strong className="text-white">{result.payload_type}</strong></span>}
+                        {result.is_shortened_url && <span className="text-yellow-400">⚠ Shortened URL</span>}
+                        <span>Risk: <strong style={{ color: result.status === 'BLOCKED' ? '#ef4444' : '#10b981' }}>{result.risk_score}/100</strong></span>
+                      </div>
+                    </div>
+                  </motion.div>
 
-                {/* Threat details */}
-                <div className="md:col-span-2 space-y-6">
-                  <ThreatResultCard result={result} type="qr" />
-                  
-                  {/* AI Explanation Card */}
-                  {result.status === 'BLOCKED' && (
-                    <AIExplanationCard 
-                      explanation={aiState.explanation}
-                      isLoading={aiState.status === 'loading'}
-                      error={aiState.error}
-                      prediction={result.prediction || 'UNKNOWN'}
-                      onRetry={() => {
-                        setAiState({ status: 'loading', explanation: null, error: null });
-                        explainThreat({
-                          url: result.decoded_payload || 'QR Image',
-                          risk_score: result.risk_score,
-                          prediction: result.prediction || 'UNKNOWN',
-                          reasons: result.reasons || [],
-                        })
-                          .then((res) => setAiState({ status: 'done', explanation: res.explanation, error: null }))
-                          .catch((err) => setAiState({ status: 'error', explanation: null, error: err.message || 'Failed to generate explanation' }));
-                      }}
-                    />
+                  {/* ── LINK SAFETY CARD (always show when URL is found) ── */}
+                  {(result.decoded_payload || result.final_url) && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 8 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className="glass-card p-4"
+                      style={{ borderColor: result.status === 'BLOCKED' ? 'rgba(239,68,68,0.25)' : 'rgba(16,185,129,0.25)' }}
+                    >
+                      <div className="text-xs font-mono text-cyber-muted uppercase tracking-widest mb-3">Link Safety Check</div>
+                      <div className="flex items-start gap-3">
+                        <div
+                          className="w-8 h-8 rounded-xl flex items-center justify-center flex-shrink-0"
+                          style={{
+                            background: result.status === 'BLOCKED' ? 'rgba(239,68,68,0.12)' : 'rgba(16,185,129,0.12)',
+                            border: `1px solid ${result.status === 'BLOCKED' ? 'rgba(239,68,68,0.3)' : 'rgba(16,185,129,0.3)'}`,
+                          }}
+                        >
+                          {result.status === 'BLOCKED'
+                            ? <AlertTriangle className="w-4 h-4 text-red-400" />
+                            : <CheckCircle className="w-4 h-4 text-emerald-400" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-xs font-semibold mb-1" style={{ color: result.status === 'BLOCKED' ? '#ef4444' : '#10b981' }}>
+                            {result.status === 'BLOCKED' ? `Malicious URL — ${result.prediction || 'THREAT'}` : 'URL is Safe'}
+                          </div>
+                          <div className="font-mono text-xs text-cyber-text break-all mb-2">
+                            {result.final_url || result.decoded_payload}
+                          </div>
+                          {result.redirect_chain && result.redirect_chain.length > 1 && (
+                            <div className="text-[11px] text-cyber-muted">
+                              🔗 {result.redirect_chain.length} redirect hop{result.redirect_chain.length !== 1 ? 's' : ''} traced
+                            </div>
+                          )}
+                          {result.reasons && result.reasons.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-1.5">
+                              {result.reasons.slice(0, 3).map((r, i) => (
+                                <span key={i} className="text-[10px] px-2 py-0.5 rounded-full" style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: '#94a3b8' }}>
+                                  {r}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    </motion.div>
                   )}
-                </div>
-              </div>
 
-              {/* Scan again */}
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                onClick={reset}
-                className="w-full cyber-btn cyber-btn-secondary py-3 rounded-xl text-sm"
-              >
-                <QrCode className="w-4 h-4" />
-                Scan Another QR Code
-              </motion.button>
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* Risk meter + preview */}
+                    <div className="space-y-4">
+                      <div className="glass-card p-6 flex flex-col items-center justify-center">
+                        <div className="text-xs font-mono text-cyber-muted uppercase tracking-widest mb-4">Risk Score</div>
+                        <RiskMeter score={result.risk_score} size="lg" />
+                      </div>
+                      {preview && (
+                        <div className="glass-card p-4">
+                          <div className="text-xs font-mono text-cyber-muted uppercase tracking-widest mb-3">QR Image</div>
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={preview} alt="QR" className="w-full rounded-xl object-contain max-h-32" />
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Threat details */}
+                    <div className="md:col-span-2 space-y-6">
+                      <ThreatResultCard result={result} type="qr" />
+
+                      {/* AI Explanation Card — blocked QRs only */}
+                      {result.status === 'BLOCKED' && (
+                        <AIExplanationCard
+                          explanation={aiState.explanation}
+                          isLoading={aiState.status === 'loading'}
+                          error={aiState.error}
+                          prediction={result.prediction || 'UNKNOWN'}
+                          chatContext={chatContext ?? undefined}
+                          onRetry={() => {
+                            if (!chatContext) return;
+                            setAiState({ status: 'loading', explanation: null, error: null });
+                            explainThreat(chatContext)
+                              .then((res) => setAiState({ status: 'done', explanation: res.explanation, error: null }))
+                              .catch((err) => setAiState({ status: 'error', explanation: null, error: err.message || 'Failed' }));
+                          }}
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Scan again */}
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    onClick={reset}
+                    className="w-full cyber-btn cyber-btn-secondary py-3 rounded-xl text-sm"
+                  >
+                    <QrCode className="w-4 h-4" />
+                    Scan Another QR Code
+                  </motion.button>
+                </>
+              )}
             </motion.div>
           )}
         </AnimatePresence>
