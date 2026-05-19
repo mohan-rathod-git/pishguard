@@ -1,9 +1,42 @@
-# Netlify Configuration at Repository Root
+# Netlify Configuration for PhishGuard AI
+# ─────────────────────────────────────────────────────────────────────────────
+# Deploy Steps:
+#  1. Deploy the FastAPI backend to Render.com (see render.yaml at repo root)
+#  2. Copy your Render URL, e.g.: https://phishguard-api.onrender.com
+#  3. In Netlify → Site configuration → Environment variables, add:
+#       BACKEND_URL = https://phishguard-api.onrender.com/api/v1
+#  4. Optionally add OPENROUTER_API_KEY for better AI explanations
+#  5. Redeploy this site — all features will work
+# ─────────────────────────────────────────────────────────────────────────────
+
 [build]
-  # Tell Netlify that the Next.js project is in the 'frontend' folder
-  base = "frontend"
+  base    = "frontend"
   command = "npm run build"
   publish = ".next"
 
+[build.environment]
+  # ── REQUIRED: Set these in Netlify → Site configuration → Environment variables ──
+  #
+  # BACKEND_URL = "https://your-phishguard-api.onrender.com/api/v1"
+  #   ^ URL of your deployed FastAPI backend (from Render, Railway, Fly.io, etc.)
+  #
+  # ── OPTIONAL: AI Explanations ──
+  #
+  # OPENROUTER_API_KEY = "sk-or-..."
+  #   ^ Get a free key at https://openrouter.ai — enables GPT-4o-mini explanations.
+  #   ^ Without this, the built-in rule-based explanations are used (still works).
+  #
+  # N8N_WEBHOOK_URL = "https://yourworkspace.app.n8n.cloud/webhook/explain-link"
+  #   ^ Optional n8n webhook for AI explanations (fallback to built-in if unavailable).
+  #
+  # FORCE_N8N = "true"
+  #   ^ Force n8n instead of OpenRouter (only if you prefer n8n).
+
 [[plugins]]
   package = "@netlify/plugin-nextjs"
+
+# ── Redirect: Keep /api/* on the same domain (Next.js handles these) ──
+[[redirects]]
+  from   = "/api/*"
+  to     = "/api/:splat"
+  status = 200

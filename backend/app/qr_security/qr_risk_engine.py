@@ -131,7 +131,7 @@ class QRRiskEngine:
         for idx, qr in enumerate(decoded_results):
             logger.info(
                 f"[{scan_id}] Processing QR {idx+1}/{len(decoded_results)}: "
-                f"{qr.decoded_text[:80]}..."
+                f"{qr.decoded_text[:80]}{'...' if len(qr.decoded_text) > 80 else ''}"
             )
 
             qr_result = await self._analyze_single_qr(

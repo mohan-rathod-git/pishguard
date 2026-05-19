@@ -7,7 +7,16 @@ import {
   ModelInfoResponse,
 } from '@/types';
 
-const BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
+/**
+ * All requests go through the internal Next.js proxy at /api/backend/*.
+ * The proxy reads BACKEND_URL server-side and forwards to FastAPI.
+ * This eliminates CORS issues and keeps the backend URL private.
+ *
+ * To configure:
+ *   Local dev : set NEXT_PUBLIC_API_URL in .env.local (already done)
+ *   Netlify   : set BACKEND_URL in Site → Environment variables
+ */
+const BASE_URL = '/api/backend';
 
 async function fetcher<T>(path: string, options?: RequestInit): Promise<T> {
   const res = await fetch(`${BASE_URL}${path}`, {
@@ -47,6 +56,7 @@ export async function scanQRFile(file: File): Promise<QRScanResponse> {
   formData.append('follow_redirects', 'true');
   formData.append('use_ml_model', 'true');
 
+  // Do NOT set Content-Type header — browser/fetch sets it with the correct multipart boundary
   const res = await fetch(`${BASE_URL}/qr/scan`, {
     method: 'POST',
     body: formData,

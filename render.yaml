@@ -1,0 +1,30 @@
+# render.yaml — Deploy PhishGuard FastAPI backend to Render.com (free tier)
+#
+# Steps:
+#  1. Push this repo to GitHub
+#  2. Go to https://render.com → New → Web Service → connect your repo
+#  3. Render auto-detects this file and configures everything
+#  4. Copy the deployed URL (e.g. https://phishguard-api.onrender.com)
+#  5. Set BACKEND_URL=https://phishguard-api.onrender.com/api/v1 in Netlify env vars
+
+services:
+  - type: web
+    name: phishguard-api
+    env: python
+    plan: free
+    region: oregon
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /api/v1/health
+    envVars:
+      - key: APP_ENV
+        value: production
+      - key: DEBUG
+        value: "false"
+      - key: CORS_ORIGINS
+        value: "*"
+      - key: LOG_LEVEL
+        value: INFO
+      - key: API_WORKERS
+        value: "1"

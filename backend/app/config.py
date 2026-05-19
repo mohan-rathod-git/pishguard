@@ -35,7 +35,7 @@ class Settings(BaseSettings):
     MAX_DATASET_ROWS: int = 500000
 
     # ── Security ──
-    CORS_ORIGINS: str = "http://localhost:3000,http://localhost:8000"
+    CORS_ORIGINS: str = "*"  # Override via env var: CORS_ORIGINS=https://yoursite.netlify.app
     MAX_BATCH_SIZE: int = 100
     MAX_URL_LENGTH: int = 2048
 
@@ -54,7 +54,13 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins_list(self) -> List[str]:
-        return [o.strip() for o in self.CORS_ORIGINS.split(",")]
+        origins = [o.strip() for o in self.CORS_ORIGINS.split(",")]
+        return origins
+
+    @property
+    def cors_allow_all(self) -> bool:
+        """Return True if wildcard CORS is configured."""
+        return "*" in self.CORS_ORIGINS
 
     class Config:
         env_file = ".env"

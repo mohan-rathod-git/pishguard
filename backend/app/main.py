@@ -75,10 +75,13 @@ app = FastAPI(
 
 
 # ── CORS ──
+# When CORS_ORIGINS=* the backend accepts requests from any origin.
+# This is the safe default for Netlify + Render deployments where the
+# Next.js proxy (app/api/backend/[...path]) handles browser-side security.
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=settings.cors_origins_list,
-    allow_credentials=True,
+    allow_origins=["*"] if settings.cors_allow_all else settings.cors_origins_list,
+    allow_credentials=False if settings.cors_allow_all else True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
