@@ -1,8 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Allow @/ path alias
-  experimental: {},
-  // Suppress styled-jsx warning (we use Tailwind now)
+  experimental: {
+    // Treat these native modules as external so Next.js doesn't try to bundle them
+    serverComponentsExternalPackages: ['sharp', 'jsqr'],
+  },
   compiler: {},
   images: {
     remotePatterns: [],

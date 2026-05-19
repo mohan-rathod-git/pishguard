@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { useRef, useState, useEffect } from 'react';
 import {
   Shield, Globe, QrCode, Zap, Lock, Activity,
-  ArrowRight, Check, Terminal, ChevronRight, Star
+  ArrowRight, Check, Terminal
 } from 'lucide-react';
 import Navbar from '@/components/Navbar';
 import ParticleBackground from '@/components/ParticleBackground';
@@ -62,53 +62,7 @@ const stats = [
   { value: '24/7', label: 'Active Monitoring' },
 ];
 
-const testimonials = [
-  {
-    name: 'Arjun Mehta',
-    role: 'CTO, FinSecure India',
-    text: 'PhishGuard blocked 3,000+ phishing URLs in our first week. The QR detection is a game changer for our banking platform.',
-    rating: 5,
-  },
-  {
-    name: 'Priya Krishnan',
-    role: 'Security Lead, TechStack',
-    text: 'The explainable AI feature gives our security team full visibility into why each URL is flagged. Incredible product.',
-    rating: 5,
-  },
-  {
-    name: 'Rahul Das',
-    role: 'DevOps Engineer, CloudNine',
-    text: 'REST API integration took under 10 minutes. The batch prediction endpoint is blazing fast.',
-    rating: 5,
-  },
-];
 
-const pricingPlans = [
-  {
-    name: 'Free',
-    price: '₹0',
-    period: 'forever',
-    features: ['100 URL scans/day', '10 QR scans/day', 'Basic threat analysis', 'API access'],
-    cta: 'Start Free',
-    highlighted: false,
-  },
-  {
-    name: 'Pro',
-    price: '₹999',
-    period: '/month',
-    features: ['50,000 URL scans/month', '5,000 QR scans/month', 'Batch prediction API', 'Priority support', 'Advanced analytics', 'Webhook alerts'],
-    cta: 'Start Pro',
-    highlighted: true,
-  },
-  {
-    name: 'Enterprise',
-    price: 'Custom',
-    period: '',
-    features: ['Unlimited scans', 'On-premise deployment', 'Custom ML model training', 'SLA guarantee', 'Dedicated support', 'SSO & RBAC'],
-    cta: 'Contact Sales',
-    highlighted: false,
-  },
-];
 
 function AnimatedStat({ value, label }: { value: string; label: string }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -393,102 +347,7 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Testimonials */}
-      <section className="py-24 px-4 border-t border-cyber-border/20">
-        <div className="container max-w-6xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-display text-4xl font-black text-white mb-3">
-              Trusted by <span className="gradient-text">security teams</span>
-            </h2>
-          </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {testimonials.map((t, i) => (
-              <motion.div
-                key={i}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className="glass-card p-6"
-              >
-                <div className="flex gap-0.5 mb-4">
-                  {[...Array(t.rating)].map((_, j) => (
-                    <Star key={j} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                  ))}
-                </div>
-                <p className="text-cyber-text text-sm leading-relaxed mb-4">"{t.text}"</p>
-                <div>
-                  <div className="font-bold text-sm text-white">{t.name}</div>
-                  <div className="text-xs text-cyber-muted">{t.role}</div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
 
-      {/* Pricing */}
-      <section className="py-24 px-4">
-        <div className="container max-w-5xl">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-display text-4xl font-black text-white mb-3">
-              Simple <span className="gradient-text">pricing</span>
-            </h2>
-            <p className="text-cyber-text">Start free, scale as you grow.</p>
-          </motion.div>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-            {pricingPlans.map((plan, i) => (
-              <motion.div
-                key={plan.name}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: i * 0.1 }}
-                className={`glass-card p-6 relative ${plan.highlighted ? 'animated-border' : ''}`}
-                style={plan.highlighted ? { borderColor: 'rgba(79,172,254,0.4)' } : {}}
-              >
-                {plan.highlighted && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 rounded-full gradient-bg text-[10px] font-black text-cyber-black uppercase tracking-widest">
-                    Most Popular
-                  </div>
-                )}
-                <div className="mb-4">
-                  <div className="text-xs font-mono text-cyber-muted uppercase tracking-wider mb-2">{plan.name}</div>
-                  <div className="flex items-baseline gap-1">
-                    <span className="text-3xl font-black text-white">{plan.price}</span>
-                    <span className="text-sm text-cyber-muted">{plan.period}</span>
-                  </div>
-                </div>
-                <ul className="space-y-2.5 mb-6">
-                  {plan.features.map((f) => (
-                    <li key={f} className="flex items-center gap-2 text-sm text-cyber-text">
-                      <Check className="w-3.5 h-3.5 text-cyber-green flex-shrink-0" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <button
-                  className={`w-full cyber-btn text-sm py-3 rounded-xl font-bold ${
-                    plan.highlighted ? 'cyber-btn-primary text-cyber-black' : 'cyber-btn-secondary'
-                  }`}
-                >
-                  {plan.cta}
-                </button>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
 
       {/* CTA */}
       <section className="py-24 px-4">
