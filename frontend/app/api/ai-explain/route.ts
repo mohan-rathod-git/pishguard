@@ -19,9 +19,14 @@ const OPENROUTER_KEY = process.env.OPENROUTER_API_KEY || '';
 
 const N8N_URL =
   process.env.N8N_WEBHOOK_URL ||
+  process.env.NEXT_PUBLIC_N8N_WEBHOOK_URL ||
   'https://mohanrathod123.app.n8n.cloud/webhook/explain-link';
 
-const USE_N8N = process.env.FORCE_N8N === 'true'; // set to true to route via n8n
+const USE_N8N =
+  process.env.FORCE_N8N === 'true' ||
+  process.env.NEXT_PUBLIC_FORCE_N8N === 'true' ||
+  !OPENROUTER_KEY; // Default to n8n if no OpenRouter key is set
+
 
 // ── Prompt builder ────────────────────────────────────────────────────────────
 
