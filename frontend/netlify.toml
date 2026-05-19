@@ -1,0 +1,7 @@
+# Netlify Configuration for PhishGuard Next.js Frontend
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"

@@ -1,0 +1,9 @@
+# Netlify Configuration at Repository Root
+[build]
+  # Tell Netlify that the Next.js project is in the 'frontend' folder
+  base = "frontend"
+  command = "npm run build"
+  publish = ".next"
+
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
